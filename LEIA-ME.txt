@@ -24,3 +24,6 @@ OBSERVAÇÕES
 - A recuperação de senha exige internet e URL de retorno permitida no Supabase.
 - O login não resolve indisponibilidade/limites da API Gemini; mantém o tratamento de erros da V21.
 - Teste após publicar: login, sair/entrar, recuperação de senha, registrar refeição, Texto IA, Foto IA, medidas, bioimpedância e sincronização.
+
+
+VERSÃO V23: botão “Continuar com Google” integrado ao Supabase Auth via signInWithOAuth. O provedor Google deve estar habilitado no Supabase; a URL de retorno usada é a URL atual do GitHub Pages. Não coloque Client Secret no HTML.

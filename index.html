@@ -66,6 +66,7 @@
         <div><label for="auth-email" class="block text-xs font-semibold text-slate-600 mb-1">E-mail</label><input id="auth-email" class="auth-field" type="email" autocomplete="username" placeholder="voce@exemplo.com"></div>
         <div><label for="auth-password" class="block text-xs font-semibold text-slate-600 mb-1">Senha</label><input id="auth-password" class="auth-field" type="password" autocomplete="current-password" placeholder="Sua senha" /></div>
         <button id="auth-login" class="auth-btn w-full bg-[#0a5cad] hover:bg-blue-800 text-white">Entrar</button>
+        <button id="auth-google" type="button" class="auth-btn w-full border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 flex items-center justify-center gap-2"><span aria-hidden="true" class="font-bold text-lg">G</span> Continuar com Google</button>
         <div class="grid grid-cols-2 gap-2"><button id="auth-signup" class="auth-btn border border-emerald-600 text-emerald-800 hover:bg-emerald-50">Criar conta</button><button id="auth-forgot" class="auth-btn border border-slate-300 text-slate-700 hover:bg-slate-50">Esqueci a senha</button></div>
       </div>
       <div id="auth-recovery-fields" class="hidden space-y-3">
@@ -2193,11 +2194,23 @@
     }
     return supabaseClient;
   }
-  function setAuthBusy(busy) { ['auth-login','auth-signup','auth-forgot','auth-update-password'].forEach(id=>{const el=$('#'+id); if(el) el.disabled=busy;}); }
+  function setAuthBusy(busy) { ['auth-login','auth-google','auth-signup','auth-forgot','auth-update-password'].forEach(id=>{const el=$('#'+id); if(el) el.disabled=busy;}); }
   ['nutri_supabase_url','nutri_supabase_key'].forEach((key)=>{});
   $('#auth-supabase-url').value=localStorage.getItem('nutri_supabase_url') || supabaseConfig.url || '';
   $('#auth-supabase-key').value=localStorage.getItem('nutri_supabase_key') || supabaseConfig.key || '';
   $('#auth-email').value=localStorage.getItem('nutri_supabase_email') || '';
+  $('#auth-google').onclick=async()=>{
+    setAuthBusy(true);
+    try {
+      const client=authClientFromGate();
+      const redirectTo=window.location.origin+window.location.pathname;
+      const {error}=await client.auth.signInWithOAuth({provider:'google',options:{redirectTo, queryParams:{access_type:'offline',prompt:'select_account'}}});
+      if(error) throw error;
+    } catch(err) {
+      setAuthMessage('Não foi possível iniciar o login com Google. Confira se o provedor Google está habilitado no Supabase e se o endereço de retorno está autorizado. '+authFriendlyError(err),'error');
+      setAuthBusy(false);
+    }
+  };
   $('#auth-login').onclick=async()=>{
     setAuthBusy(true);
     try {
