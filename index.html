@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <!-- Diário Nutricional V24: Texto IA preserva Alimentos / Descrição da Refeição -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Diário Nutricional V21</title>
@@ -1537,10 +1538,15 @@
       const totalGorduras = somarCampo(itens, 'gorduras_g');
       const totalCalorias = totalProteinas * 4 + totalCarboidratos * 4 + totalGorduras * 9;
 
-      $('#reg-alimentos').value = itens.map(item => {
-        const porcao = item.porcao || `porção aproximada de ${Math.round(item.quantidade_g)} g`;
-        return `${item.alimento} (${porcao})`;
-      }).join('; ');
+      // Texto IA apenas calcula e preenche os campos nutricionais; não modifica
+      // o texto original digitado em Alimentos / Descrição da Refeição.
+      // A Foto IA continua preenchendo a descrição com os alimentos identificados.
+      if (isPhoto) {
+        $('#reg-alimentos').value = itens.map(item => {
+          const porcao = item.porcao || `porção aproximada de ${Math.round(item.quantidade_g)} g`;
+          return `${item.alimento} (${porcao})`;
+        }).join('; ');
+      }
       $('#reg-calorias').value = Math.round(totalCalorias);
       $('#reg-proteinas').value = Math.round(totalProteinas * 10) / 10;
       $('#reg-carboidratos').value = Math.round(totalCarboidratos * 10) / 10;

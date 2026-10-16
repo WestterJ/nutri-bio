@@ -27,3 +27,7 @@ OBSERVAÇÕES
 
 
 VERSÃO V23: botão “Continuar com Google” integrado ao Supabase Auth via signInWithOAuth. O provedor Google deve estar habilitado no Supabase; a URL de retorno usada é a URL atual do GitHub Pages. Não coloque Client Secret no HTML.
+
+
+VERSAO V24 - ALTERACAO
+Ao clicar em Texto IA, o campo 'Alimentos / Descrição da Refeição' permanece exatamente como foi digitado. A IA preenche os campos nutricionais e observações. A Foto IA continua podendo preencher a descrição com os alimentos reconhecidos.
