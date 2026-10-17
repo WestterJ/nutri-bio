@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <!-- Diário Nutricional V28: identificação visível da versão para diagnóstico -->
+  <!-- Diário Nutricional V29: identificação visível da versão para diagnóstico -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Diário Nutricional V28</title>
+<title>Diário Nutricional V29</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -89,7 +89,7 @@
       <div class="bg-white text-[#003a70] p-2 rounded-xl font-bold text-xl shadow-inner">🥗</div>
       <div>
         <h1 class="text-lg md:text-xl font-bold tracking-tight">Diário Nutricional & Bioimpedância</h1>
-        <small class="text-emerald-100 opacity-90 text-xs flex items-center gap-1 flex-wrap">Acompanhamento Premium <span class="bg-slate-600 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">V28</span> <span class="bg-purple-500 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">IA VISÃO</span></small>
+        <small class="text-emerald-100 opacity-90 text-xs flex items-center gap-1 flex-wrap">Acompanhamento Premium <span class="bg-slate-600 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">V29</span> <span class="bg-purple-500 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">IA VISÃO</span></small>
       </div>
     </div>
     
@@ -2088,19 +2088,17 @@
     try {
       const remote = await supabaseReadRemote();
       if (remote && remote.data) {
-        if (initial && userLocalHasData) {
-          tempCloudDataToDownload = remote.data;
-          $('#sync-recommendation-box').innerHTML = 'Encontramos dados locais desta conta e dados salvos na nuvem. Escolha <strong>Baixar da Nuvem</strong> para usar os dados remotos ou <strong>Enviar Dados Atuais</strong> para substituir o backup remoto.';
-          $('#modal-sync-conflict').showModal();
-        } else {
-          state = remote.data; if (!state.metas) state.metas = defaultMetas;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); userLocalHasData = true; refreshAll();
-          if (initial) showToast('Dados da sua conta carregados do Supabase.');
-        }
+        // Supabase é a fonte principal: sempre atualiza a cópia local com os dados remotos.
+        // Não abre o modal legado de conflito /apps/dados (Drive/OneDrive).
+        state = remote.data;
+        if (!state.metas) state.metas = defaultMetas;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        userLocalHasData = true;
+        refreshAll();
+        if (initial) showToast('Dados mais recentes da nuvem carregados neste dispositivo.');
       } else if (userLocalHasData) {
-        const confirmUpload = window.confirm('Esta conta ainda não tem dados na nuvem. Deseja enviar os dados locais associados a esta conta para o Supabase?');
-        if (confirmUpload) await syncSupabaseNow(true);
-        else showToast('Os dados locais foram mantidos neste dispositivo; nada foi enviado à nuvem.');
+        // Não sobrescreve a nuvem vazia nem envia dados locais sem autorização.
+        showToast('Esta conta ainda não tem dados no Supabase. Os dados locais foram preservados. Use “Sincronizar” se quiser enviá-los à nuvem.');
       } else {
         await syncSupabaseNow(false);
         showToast('Conta conectada. Seus dados serão salvos nesta conta Supabase.');
