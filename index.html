@@ -679,6 +679,7 @@
 <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl opacity-0 pointer-events-none transition duration-300 z-50 text-sm"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./supabase-config.js"></script>
 <script>
 (function() {
   "use strict";
@@ -787,7 +788,8 @@
   let tempCloudDataToDownload = null;
   let supabaseClient = null;
   let supabaseUser = null;
-  let supabaseConfig = { url: localStorage.getItem('nutri_supabase_url') || '', key: localStorage.getItem('nutri_supabase_key') || '' };
+  const sharedSupabaseConfig = window.NUTRI_SUPABASE_CONFIG || {};
+  let supabaseConfig = { url: sharedSupabaseConfig.url || localStorage.getItem('nutri_supabase_url') || '', key: sharedSupabaseConfig.key || localStorage.getItem('nutri_supabase_key') || '' };
   let supabaseSaveTimer = null;
   let supabaseSaveInFlight = false;
 
@@ -1487,17 +1489,49 @@
         }
       };
 
-      // Usa diretamente o Gemini 3.8 Flash, que aparece disponível no painel do usuário.
-      // Evita chamadas extras para listar modelos e tentativas em vários modelos, reduzindo RPM.
-      const nomeModelo = 'gemini-3.8-flash';
+      // Usa o modelo estável definido acima; evita nomes de modelo não reconhecidos pela API.
+      const nomeModelo = GEMINI_MODEL;
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${nomeModelo}:generateContent?key=${encodeURIComponent(geminiApiKey)}`;
-      const resp = await fetch(apiUrl, {
+      let resp = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
-      if (!resp.ok) {
+      // Algumas combinações de versão/modelo rejeitam responseSchema com HTTP 400.
+      // Tenta novamente sem o esquema formal, exigindo JSON no prompt; isso mantém
+      // o recurso Texto IA utilizável sem alterar o texto original dos alimentos.
+      if (resp.status === 400) {
+        let primeiraMensagem = '';
+        try {
+          const primeiroErro = await resp.clone().json();
+          primeiraMensagem = primeiroErro?.error?.message || '';
+        } catch (_) {}
+        const payloadAlternativo = {
+          systemInstruction: { parts: [{ text: systemPrompt + ' A resposta final deve ser exclusivamente um objeto JSON válido, sem markdown, com as propriedades descricao (string), observacoes (string) e itens (array de objetos com alimento, porcao, quantidade_g, proteinas_g, carboidratos_g e gorduras_g).' }] },
+          contents: [{ role: 'user', parts: userParts }],
+          generationConfig: { responseMimeType: 'application/json', temperature: 0.2, maxOutputTokens: 1800 }
+        };
+        const segundaResp = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payloadAlternativo)
+        });
+        if (segundaResp.ok) {
+          resp = segundaResp;
+        } else {
+          let segundaMensagem = '';
+          try {
+            const segundoErro = await segundaResp.clone().json();
+            segundaMensagem = segundoErro?.error?.message || '';
+          } catch (_) {}
+          const detalheFinal = segundaMensagem || primeiraMensagem;
+          const apiError = new Error(`Gemini ${nomeModelo}: HTTP ${segundaResp.status}${detalheFinal ? ' — ' + detalheFinal : ''}`);
+          apiError.status = segundaResp.status;
+          apiError.detail = detalheFinal;
+          throw apiError;
+        }
+      } else if (!resp.ok) {
         let detalhe = '';
         try {
           const erro = await resp.clone().json();
@@ -1569,7 +1603,7 @@
       const status = Number(e && e.status);
       const detalhe = String((e && (e.detail || e.message)) || '').replace(/Gemini\\s+[^:]+:\\s*HTTP\\s+\\d+\\s*[—-]?\\s*/i, '').trim();
       if (status === 400) {
-        showToast('O Gemini não aceitou os dados enviados (erro 400). Confira a descrição dos alimentos e tente novamente.');
+        showToast(`O Gemini rejeitou a solicitação (erro 400): ${detalhe || 'verifique a chave da API e tente descrever os alimentos de forma simples.'}`);
       } else if (status === 401 || status === 403) {
         showToast('Acesso ao Gemini recusado. Confira a chave da API e as permissões em Configurações & Chaves.');
       } else if (status === 404) {
