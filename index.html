@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <!-- Diário Nutricional V27: identificação visível da versão para diagnóstico -->
+  <!-- Diário Nutricional V28: identificação visível da versão para diagnóstico -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Diário Nutricional V27</title>
+<title>Diário Nutricional V28</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -89,7 +89,7 @@
       <div class="bg-white text-[#003a70] p-2 rounded-xl font-bold text-xl shadow-inner">🥗</div>
       <div>
         <h1 class="text-lg md:text-xl font-bold tracking-tight">Diário Nutricional & Bioimpedância</h1>
-        <small class="text-emerald-100 opacity-90 text-xs flex items-center gap-1 flex-wrap">Acompanhamento Premium <span class="bg-slate-600 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">V27</span> <span class="bg-purple-500 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">IA VISÃO</span></small>
+        <small class="text-emerald-100 opacity-90 text-xs flex items-center gap-1 flex-wrap">Acompanhamento Premium <span class="bg-slate-600 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">V28</span> <span class="bg-purple-500 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">IA VISÃO</span></small>
       </div>
     </div>
     
@@ -792,6 +792,7 @@
   let supabaseConfig = { url: sharedSupabaseConfig.url || localStorage.getItem('nutri_supabase_url') || '', key: sharedSupabaseConfig.key || localStorage.getItem('nutri_supabase_key') || '' };
   let supabaseSaveTimer = null;
   let supabaseSaveInFlight = false;
+  let supabaseSyncUiState = 'idle'; // idle | syncing | success | error
 
   const ordemRefeicao = { "Café da Manhã": 1, "Lanche da Manhã": 2, "Almoço": 3, "Lanche da Tarde": 4, "Pré-Treino": 5, "Pós-Treino": 6, "Jantar": 7, "Ceia": 8 };
   const refeicoesPadrao = Object.keys(ordemRefeicao);
@@ -802,8 +803,20 @@
     const text = $('#cloud-status-text');
     
     if (cloudProvider === 'supabase') {
-      pill.className = 'text-xs px-3 py-1.5 rounded-full bg-emerald-700 text-white border border-emerald-500 font-medium truncate max-w-[210px] flex items-center gap-1 shadow-sm';
-      icon.textContent = '☁️'; text.textContent = supabaseUser ? 'Supabase conectado' : 'Supabase'; return;
+      const labels = {
+        syncing: ['bg-sky-700 border-sky-500', '⏳', 'Sincronizando...'],
+        success: ['bg-emerald-700 border-emerald-500', '☁️', 'Dados sincronizados'],
+        error: ['bg-rose-700 border-rose-500', '⚠️', 'Falha na sincronização'],
+        idle: ['bg-emerald-700 border-emerald-500', '☁️', supabaseUser ? 'Supabase conectado' : 'Supabase']
+      };
+      const current = labels[supabaseSyncUiState] || labels.idle;
+      pill.className = 'text-xs px-3 py-1.5 rounded-full text-white border font-medium truncate max-w-[210px] flex items-center gap-1 shadow-sm transition-all ' + current[0];
+      icon.textContent = current[1];
+      text.textContent = current[2];
+      pill.title = supabaseSyncUiState === 'error'
+        ? 'A última sincronização falhou. Seus dados locais foram preservados. Clique para tentar novamente.'
+        : 'Clique para sincronizar agora com a nuvem';
+      return;
     }
     if (cloudProvider === 'apps-script') {
       pill.className = "text-xs px-3 py-1.5 rounded-full bg-emerald-700 text-white border border-emerald-500 font-medium truncate max-w-[210px] flex items-center gap-1 shadow-sm transition-all hover:bg-emerald-600";
@@ -2013,6 +2026,8 @@
     if (!supabaseClient || !supabaseUser) { if(showMessage) showToast('Entre no Supabase antes de sincronizar.'); return; }
     if (supabaseSaveInFlight) return;
     supabaseSaveInFlight = true;
+    supabaseSyncUiState = 'syncing';
+    updateCloudStatusPill();
     try {
       if (showMessage) showToast('Sincronizando com Supabase...', true);
       const {error} = await supabaseClient.from('diary_data').upsert({user_id:supabaseUser.id,data:state,updated_at:new Date().toISOString()},{onConflict:'user_id'});
@@ -2020,10 +2035,13 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       cloudProvider = 'supabase';
       localStorage.setItem('nutri_cloud_provider','supabase');
+      supabaseSyncUiState = 'success';
       updateCloudStatusPill();
       if (showMessage) showToast('Dados sincronizados com a nuvem.');
     } catch(err) {
       console.error('Supabase sync error:',err);
+      supabaseSyncUiState = 'error';
+      updateCloudStatusPill();
       showToast('Falha na sincronização: '+(err.message || 'verifique URL, chave, tabela e permissões RLS')+'. Os dados permanecem neste aparelho.');
     } finally { supabaseSaveInFlight = false; }
   }
@@ -2063,6 +2081,7 @@
     if (passwordRecoveryMode) { supabaseUser = nextUser; updateCloudStatusPill(); lockApp(); return; }
     if (!supabaseUser || supabaseUser.id !== nextUser.id) activateUserStorage(nextUser);
     supabaseUser = nextUser;
+    supabaseSyncUiState = 'idle';
     cloudProvider = 'supabase';
     localStorage.setItem('nutri_cloud_provider','supabase');
     updateCloudStatusPill();
