@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <!-- Diário Nutricional V24: Texto IA preserva Alimentos / Descrição da Refeição -->
+  <!-- Diário Nutricional V27: identificação visível da versão para diagnóstico -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Diário Nutricional V21</title>
+<title>Diário Nutricional V27</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -89,7 +89,7 @@
       <div class="bg-white text-[#003a70] p-2 rounded-xl font-bold text-xl shadow-inner">🥗</div>
       <div>
         <h1 class="text-lg md:text-xl font-bold tracking-tight">Diário Nutricional & Bioimpedância</h1>
-        <small class="text-emerald-100 opacity-90 text-xs flex items-center gap-1">Acompanhamento Premium <span class="bg-purple-500 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">IA VISÃO</span></small>
+        <small class="text-emerald-100 opacity-90 text-xs flex items-center gap-1 flex-wrap">Acompanhamento Premium <span class="bg-slate-600 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">V27</span> <span class="bg-purple-500 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">IA VISÃO</span></small>
       </div>
     </div>
     
@@ -1328,7 +1328,7 @@
   $('#btn-novo-registro').onclick = () => abrirModalNovo();
 
   // A estimativa deve usar a API; não inventa uma refeição nem soma palavras-chave offline.
-  const GEMINI_MODEL = 'gemini-2.5-flash';
+  const GEMINI_MODEL = 'gemini-3.8-flash';
 
   function lerArquivoComoDataURL(file) {
     return new Promise((resolve, reject) => {
@@ -1607,7 +1607,10 @@
       } else if (status === 401 || status === 403) {
         showToast('Acesso ao Gemini recusado. Confira a chave da API e as permissões em Configurações & Chaves.');
       } else if (status === 404) {
-        showToast('O modelo Gemini solicitado não foi encontrado ou não está disponível para esta chave (erro 404). Confira o modelo e a API.');
+        // Diagnóstico V26: exibe o detalhe original retornado pela API para identificar
+        // se o 404 se refere ao nome do modelo, versão da API ou outro recurso.
+        const detalhe404 = detalhe ? detalhe.slice(0, 220) : 'A API não retornou uma descrição adicional.';
+        showToast(`Gemini HTTP 404 — ${detalhe404}`);
       } else if (status === 429) {
         const quota = /quota|daily|per.day|limit: 0|billing/i.test(detalhe);
         showToast(quota
