@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <!-- Diário Nutricional V30: identificação visível da versão para diagnóstico -->
+  <!-- Diário Nutricional V31: configuração centralizada do Supabase -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Diário Nutricional V30</title>
+<title>Diário Nutricional V31</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -62,8 +62,8 @@
     </div>
     <div class="p-6 space-y-4">
       <div id="auth-normal-fields" class="space-y-3">
-        <div><label for="auth-supabase-url" class="block text-xs font-semibold text-slate-600 mb-1">URL do projeto Supabase</label><input id="auth-supabase-url" class="auth-field" type="url" autocomplete="url" placeholder="https://seuprojeto.supabase.co"></div>
-        <div><label for="auth-supabase-key" class="block text-xs font-semibold text-slate-600 mb-1">Chave pública (publishable/anon)</label><input id="auth-supabase-key" class="auth-field" type="password" autocomplete="off" placeholder="sb_publishable_... ou anon key"></div>
+        <div id="auth-supabase-url-wrap"><label for="auth-supabase-url" class="block text-xs font-semibold text-slate-600 mb-1">URL do projeto Supabase</label><input id="auth-supabase-url" class="auth-field" type="url" autocomplete="url" placeholder="https://seuprojeto.supabase.co"></div>
+        <div id="auth-supabase-key-wrap"><label for="auth-supabase-key" class="block text-xs font-semibold text-slate-600 mb-1">Chave pública (publishable/anon)</label><input id="auth-supabase-key" class="auth-field" type="password" autocomplete="off" placeholder="sb_publishable_... ou anon key"></div>
         <div><label for="auth-email" class="block text-xs font-semibold text-slate-600 mb-1">E-mail</label><input id="auth-email" class="auth-field" type="email" autocomplete="username" placeholder="voce@exemplo.com"></div>
         <div><label for="auth-password" class="block text-xs font-semibold text-slate-600 mb-1">Senha</label><input id="auth-password" class="auth-field" type="password" autocomplete="current-password" placeholder="Sua senha" /></div>
         <button id="auth-login" class="auth-btn w-full bg-[#0a5cad] hover:bg-blue-800 text-white">Entrar</button>
@@ -89,7 +89,7 @@
       <div class="bg-white text-[#003a70] p-2 rounded-xl font-bold text-xl shadow-inner">🥗</div>
       <div>
         <h1 class="text-lg md:text-xl font-bold tracking-tight">Diário Nutricional & Bioimpedância</h1>
-        <small class="text-emerald-100 opacity-90 text-xs flex items-center gap-1 flex-wrap">Acompanhamento Premium <span class="bg-slate-600 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">V30</span> <span class="bg-purple-500 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">IA VISÃO</span></small>
+        <small class="text-emerald-100 opacity-90 text-xs flex items-center gap-1 flex-wrap">Acompanhamento Premium <span class="bg-slate-600 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">V31</span> <span class="bg-purple-500 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">IA VISÃO</span></small>
       </div>
     </div>
     
@@ -446,10 +446,10 @@
       <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between md:col-span-2">
         <div>
           <h2 class="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">☁️ Sincronização automática (Supabase)</h2>
-          <p class="text-xs text-slate-500 mb-4 leading-relaxed">Configure uma vez o URL e a chave pública (anon/publishable) do seu projeto Supabase. Depois entre com e-mail e senha em cada dispositivo. Nunca use a chave service_role neste HTML.</p>
+          <p class="text-xs text-slate-500 mb-4 leading-relaxed">A configuração centralizada é carregada de supabase-config.js. Quando esse arquivo contém a URL e a chave pública válidas, os campos de configuração ficam ocultos e todos os dispositivos usam os mesmos dados. Nunca use a chave service_role neste HTML.</p>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div><label class="block text-xs font-semibold text-slate-600 mb-1">Project URL</label><input type="url" id="config-supabase-url" placeholder="https://seuprojeto.supabase.co" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></div>
-            <div><label class="block text-xs font-semibold text-slate-600 mb-1">Publishable / anon key</label><input type="password" id="config-supabase-key" placeholder="sb_publishable_... ou anon key" autocomplete="off" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></div>
+            <div id="settings-supabase-url-wrap"><label class="block text-xs font-semibold text-slate-600 mb-1">Project URL</label><input type="url" id="config-supabase-url" placeholder="https://seuprojeto.supabase.co" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></div>
+            <div id="settings-supabase-key-wrap"><label class="block text-xs font-semibold text-slate-600 mb-1">Publishable / anon key</label><input type="password" id="config-supabase-key" placeholder="sb_publishable_... ou anon key" autocomplete="off" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></div>
             <div><label class="block text-xs font-semibold text-slate-600 mb-1">E-mail</label><input type="email" id="config-supabase-email" placeholder="voce@exemplo.com" autocomplete="email" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></div>
             <div><label class="block text-xs font-semibold text-slate-600 mb-1">Senha</label><input type="password" id="config-supabase-password" placeholder="Mínimo conforme política do projeto" autocomplete="current-password" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></div>
           </div>
@@ -782,6 +782,10 @@
   let supabaseConfig = { url: sharedSupabaseConfig.url || localStorage.getItem('nutri_supabase_url') || '', key: sharedSupabaseConfig.key || localStorage.getItem('nutri_supabase_key') || '' };
   let supabaseSaveTimer = null;
   let supabaseSaveInFlight = false;
+  let supabaseSaveQueued = false;
+  let supabaseLocalDirty = false;
+  let supabaseLastRemoteUpdatedAt = null;
+  let supabaseRemoteCheckInFlight = false;
   let supabaseSyncUiState = 'idle'; // idle | syncing | success | error
 
   const ordemRefeicao = { "Café da Manhã": 1, "Lanche da Manhã": 2, "Almoço": 3, "Lanche da Tarde": 4, "Pré-Treino": 5, "Pós-Treino": 6, "Jantar": 7, "Ceia": 8 };
@@ -864,6 +868,7 @@
   async function saveCloud(force = false) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     if (supabaseUser && supabaseClient) {
+      supabaseLocalDirty = true;
       scheduleSupabaseSave(force);
       return;
     }
@@ -1973,8 +1978,8 @@
   
   // --- Supabase: login por e-mail/senha e sincronização automática protegida por RLS ---
   function readSupabaseForm() {
-    const url = ($('#config-supabase-url').value || supabaseConfig.url || '').trim().replace(/\/$/, '');
-    const key = ($('#config-supabase-key').value || supabaseConfig.key || '').trim();
+    const url = (sharedSupabaseConfig.url || $('#config-supabase-url').value || supabaseConfig.url || '').trim().replace(/\/$/, '');
+    const key = (sharedSupabaseConfig.key || $('#config-supabase-key').value || supabaseConfig.key || '').trim();
     if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)) throw new Error('Informe o Project URL válido do Supabase (https://....supabase.co).');
     if (!key) throw new Error('Informe a chave pública publishable/anon do Supabase. Nunca use service_role.');
     supabaseConfig = {url, key};
@@ -1996,32 +2001,76 @@
 
   async function syncSupabaseNow(showMessage=true) {
     if (!supabaseClient || !supabaseUser) { if(showMessage) showToast('Entre no Supabase antes de sincronizar.'); return; }
-    if (supabaseSaveInFlight) return;
+    if (supabaseSaveInFlight) { supabaseSaveQueued = true; return; }
     supabaseSaveInFlight = true;
     supabaseSyncUiState = 'syncing';
     updateCloudStatusPill();
     try {
       if (showMessage) showToast('Sincronizando com Supabase...', true);
-      const {error} = await supabaseClient.from('diary_data').upsert({user_id:supabaseUser.id,data:state,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+      // Envia uma fotografia consistente do estado; alterações feitas durante o envio
+      // ficam marcadas e são enviadas em seguida, evitando perder a última edição.
+      const snapshot = JSON.parse(JSON.stringify(state));
+      const savedAt = new Date().toISOString();
+      const {error} = await supabaseClient.from('diary_data').upsert({user_id:supabaseUser.id,data:snapshot,updated_at:savedAt},{onConflict:'user_id'});
       if (error) throw error;
+      supabaseLastRemoteUpdatedAt = savedAt;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       cloudProvider = 'supabase';
       localStorage.setItem('nutri_cloud_provider','supabase');
+      const unchanged = JSON.stringify(state) === JSON.stringify(snapshot);
+      supabaseLocalDirty = !unchanged;
       supabaseSyncUiState = 'success';
       updateCloudStatusPill();
-      if (showMessage) showToast('Dados sincronizados com a nuvem.');
+      if (showMessage) showToast(unchanged ? 'Dados sincronizados com a nuvem.' : 'Alterações salvas; enviando as edições mais recentes...');
+      if (!unchanged) supabaseSaveQueued = true;
     } catch(err) {
       console.error('Supabase sync error:',err);
       supabaseSyncUiState = 'error';
       updateCloudStatusPill();
       showToast('Falha na sincronização: '+(err.message || 'verifique URL, chave, tabela e permissões RLS')+'. Os dados permanecem neste aparelho.');
-    } finally { supabaseSaveInFlight = false; }
+    } finally {
+      supabaseSaveInFlight = false;
+      if (supabaseSaveQueued && supabaseUser && supabaseClient) {
+        supabaseSaveQueued = false;
+        scheduleSupabaseSave(false);
+      }
+    }
   }
 
   function scheduleSupabaseSave(force=false) {
     if (supabaseSaveTimer) clearTimeout(supabaseSaveTimer);
     supabaseSaveTimer = setTimeout(() => syncSupabaseNow(!!force), force ? 0 : 1200);
   }
+
+  // Atualiza a cópia local quando a nuvem mudou em outro dispositivo.
+  // Nunca substitui edições locais ainda não enviadas.
+  async function refreshFromSupabaseIfNeeded(showMessage=false) {
+    if (!supabaseClient || !supabaseUser || supabaseRemoteCheckInFlight || supabaseLocalDirty || supabaseSaveInFlight) return;
+    supabaseRemoteCheckInFlight = true;
+    try {
+      const remote = await supabaseReadRemote();
+      if (!remote || !remote.data) return;
+      const remoteTime = remote.updated_at || null;
+      if (remoteTime && supabaseLastRemoteUpdatedAt && Date.parse(remoteTime) <= Date.parse(supabaseLastRemoteUpdatedAt)) return;
+      const remoteJson = JSON.stringify(remote.data);
+      const localJson = JSON.stringify(state);
+      if (remoteJson !== localJson) {
+        state = remote.data;
+        if (!state.metas) state.metas = defaultMetas;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        refreshAll();
+        if (showMessage) showToast('Dados atualizados a partir do Supabase.');
+      }
+      supabaseLastRemoteUpdatedAt = remoteTime || new Date().toISOString();
+    } catch(err) {
+      console.warn('Verificação automática Supabase:', err.message || err);
+    } finally { supabaseRemoteCheckInFlight = false; }
+  }
+
+  window.addEventListener('focus', () => refreshFromSupabaseIfNeeded(true));
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshFromSupabaseIfNeeded(true); });
+  // Polling leve para manter celular e computador atualizados sem exigir botão manual.
+  setInterval(() => { if (!document.hidden) refreshFromSupabaseIfNeeded(false); }, 45000);
 
   function activateUserStorage(user) {
     const userId = user && user.id;
@@ -2060,6 +2109,8 @@
     try {
       const remote = await supabaseReadRemote();
       if (remote && remote.data) {
+        supabaseLastRemoteUpdatedAt = remote.updated_at || null;
+        supabaseLocalDirty = false;
         // Supabase é a fonte principal: sempre atualiza a cópia local com os dados remotos.
         // Não abre o modal legado de conflito /apps/dados (Drive/OneDrive).
         state = remote.data;
@@ -2069,9 +2120,11 @@
         refreshAll();
         if (initial) showToast('Dados mais recentes da nuvem carregados neste dispositivo.');
       } else if (userLocalHasData) {
+        supabaseLastRemoteUpdatedAt = null;
         // Não sobrescreve a nuvem vazia nem envia dados locais sem autorização.
         showToast('Esta conta ainda não tem dados no Supabase. Os dados locais foram preservados. Use “Sincronizar” se quiser enviá-los à nuvem.');
       } else {
+        supabaseLastRemoteUpdatedAt = null;
         await syncSupabaseNow(false);
         showToast('Conta conectada. Seus dados serão salvos nesta conta Supabase.');
       }
@@ -2208,8 +2261,8 @@
     setAuthMessage('Informe seus dados para entrar. A sessão poderá permanecer ativa neste dispositivo.');
   }
   function authClientFromGate() {
-    const url=$('#auth-supabase-url').value.trim().replace(/\/$/,'');
-    const key=$('#auth-supabase-key').value.trim();
+    const url=($('#auth-supabase-url').value.trim() || sharedSupabaseConfig.url || supabaseConfig.url || '').replace(/\/$/,'');
+    const key=$('#auth-supabase-key').value.trim() || sharedSupabaseConfig.key || supabaseConfig.key || '';
     if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)) throw new Error('Informe a URL válida do projeto Supabase.');
     if(!key || /service_role/i.test(key)) throw new Error('Informe somente a chave pública publishable/anon. Nunca use service_role.');
     if(!window.supabase || !window.supabase.createClient) throw new Error('A biblioteca Supabase não carregou. Verifique a conexão e recarregue a página.');
@@ -2228,8 +2281,15 @@
   }
   function setAuthBusy(busy) { ['auth-login','auth-google','auth-signup','auth-forgot','auth-update-password'].forEach(id=>{const el=$('#'+id); if(el) el.disabled=busy;}); }
   ['nutri_supabase_url','nutri_supabase_key'].forEach((key)=>{});
-  $('#auth-supabase-url').value=localStorage.getItem('nutri_supabase_url') || supabaseConfig.url || '';
-  $('#auth-supabase-key').value=localStorage.getItem('nutri_supabase_key') || supabaseConfig.key || '';
+  $('#auth-supabase-url').value=sharedSupabaseConfig.url || localStorage.getItem('nutri_supabase_url') || supabaseConfig.url || '';
+  $('#auth-supabase-key').value=sharedSupabaseConfig.key || localStorage.getItem('nutri_supabase_key') || supabaseConfig.key || '';
+  const hasCentralSupabaseConfig = Boolean(sharedSupabaseConfig.url && sharedSupabaseConfig.key && !/COLE_A_CHAVE|SUA_CHAVE|SUBSTITUA/i.test(sharedSupabaseConfig.key));
+  if (hasCentralSupabaseConfig) {
+    ['auth-supabase-url-wrap','auth-supabase-key-wrap','settings-supabase-url-wrap','settings-supabase-key-wrap'].forEach(id => { const el=$('#'+id); if(el) el.classList.add('hidden'); });
+    const help=$('#supabase-help'); if(help) help.textContent='Configuração centralizada ativa via supabase-config.js. Para alterar a conexão, edite esse arquivo no repositório. Use e-mail/senha ou Google para entrar em cada dispositivo.';
+  } else {
+    const help=$('#supabase-help'); if(help) help.textContent='A configuração centralizada ainda não está completa. Edite supabase-config.js e informe a URL e a chave pública do projeto. Enquanto isso, os campos de configuração permanecem disponíveis.';
+  }
   $('#auth-email').value=localStorage.getItem('nutri_supabase_email') || '';
   $('#auth-google').onclick=async()=>{
     setAuthBusy(true);
