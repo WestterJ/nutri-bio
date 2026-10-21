@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <!-- Diário Nutricional V31: configuração centralizada do Supabase -->
+  <!-- Diário Nutricional V32: configuração centralizada do Supabase -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Diário Nutricional V31</title>
+<title>Diário Nutricional V32</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -89,7 +89,7 @@
       <div class="bg-white text-[#003a70] p-2 rounded-xl font-bold text-xl shadow-inner">🥗</div>
       <div>
         <h1 class="text-lg md:text-xl font-bold tracking-tight">Diário Nutricional & Bioimpedância</h1>
-        <small class="text-emerald-100 opacity-90 text-xs flex items-center gap-1 flex-wrap">Acompanhamento Premium <span class="bg-slate-600 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">V31</span> <span class="bg-purple-500 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">IA VISÃO</span></small>
+        <small class="text-emerald-100 opacity-90 text-xs flex items-center gap-1 flex-wrap">Acompanhamento Premium <span class="bg-slate-600 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">V32</span> <span class="bg-purple-500 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">IA VISÃO</span></small>
       </div>
     </div>
     
@@ -418,16 +418,15 @@
         <div>
           <h2 class="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">🤖 Inteligência Artificial</h2>
           <p class="text-xs text-slate-500 mb-4 leading-relaxed">
-            Cole sua <strong>API Key</strong> do Google Gemini para Foto IA e Texto IA. 
-            <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-600 underline font-medium hover:text-blue-800">Gerar chave grátis</a>.
+            Texto IA e Foto IA usam a chave Gemini protegida no servidor. Não é necessário cadastrar uma chave neste dispositivo.
           </p>
           
           <div class="space-y-4">
             <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">Google Gemini API Key</label>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Chave Gemini no servidor</label>
               <div class="relative flex items-center">
-                <input type="password" id="config-api-key" placeholder="Ex: AIzaSyB..." class="w-full px-3 py-2 pr-10 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500">
-                <button type="button" id="btn-toggle-apikey" class="absolute right-3 text-slate-400 hover:text-slate-600 focus:outline-none" title="Mostrar/Ocultar chave">
+                <input type="text" id="config-api-key" value="Configurada no Supabase" readonly class="w-full px-3 py-2 pr-10 border border-slate-300 rounded-lg text-sm bg-slate-50 text-slate-500">
+                <button type="button" id="btn-toggle-apikey" class="absolute right-3 text-slate-400 hover:text-slate-600 focus:outline-none" title="A chave fica protegida no servidor">
                   <svg id="icon-eye-closed" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
                   <svg id="icon-eye-open" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268-2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                 </button>
@@ -437,7 +436,7 @@
         </div>
         <div class="pt-4 flex justify-end">
           <button type="button" id="btn-salvar-apikey" class="w-full px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-semibold shadow transition flex items-center justify-center gap-2">
-            📡 Salvar Chave IA
+            🔒 IA protegida no servidor
           </button>
         </div>
       </div>
@@ -774,7 +773,7 @@
   let googleTokenExpiresAt = 0;
   let googleAuthLibraryPromise = null;
   let googleClientId = localStorage.getItem('nutri_google_client_id') || '';
-  let geminiApiKey = localStorage.getItem('nutri_gemini_api_key') || '';
+  let geminiApiKey = ''; // V32 usa a chave Gemini somente no servidor.
   let tempCloudDataToDownload = null;
   let supabaseClient = null;
   let supabaseUser = null;
@@ -1394,14 +1393,49 @@
       Number.isFinite(gordura) && gordura >= 0 && gordura <= 1000;
   }
 
+  async function chamarNutriGemini(payload) {
+    if (!supabaseClient || !supabaseConfig.url || !supabaseConfig.key) {
+      throw new Error('A configuração do Supabase não está disponível. Recarregue o aplicativo e entre novamente.');
+    }
+    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+    const accessToken = sessionData && sessionData.session && sessionData.session.access_token;
+    if (sessionError || !accessToken) {
+      const err = new Error('Sua sessão expirou. Entre novamente no aplicativo.');
+      err.status = 401;
+      throw err;
+    }
+    const endpoint = `${supabaseConfig.url.replace(/\/$/, '')}/functions/v1/dynamic-service`;
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+        'apikey': supabaseConfig.key
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+      let detail = `Serviço de IA retornou HTTP ${response.status}.`;
+      try {
+        const errorBody = await response.clone().json();
+        detail = errorBody?.error || errorBody?.message || detail;
+      } catch (_) {}
+      const error = new Error(detail);
+      error.status = response.status;
+      error.detail = detail;
+      throw error;
+    }
+    return response;
+  }
+
   async function processarIAVision(fileOrText, isPhoto = false) {
     const loader = $('#ia-loading');
     const btnFoto = $('#btn-ia-foto');
     const btnTexto = $('#btn-ia-calcular');
     const texto = isPhoto ? '' : String(fileOrText || '').trim();
 
-    if (!geminiApiKey) {
-      showToast('Configure primeiro a chave Gemini em “Configurações & Chaves”.');
+    if (!supabaseClient || !supabaseUser) {
+      showToast('Entre na sua conta para usar a IA.');
       return;
     }
     if (!isPhoto && !texto) {
@@ -1479,59 +1513,8 @@
         }
       };
 
-      // Usa o modelo estável definido acima; evita nomes de modelo não reconhecidos pela API.
-      const nomeModelo = GEMINI_MODEL;
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${nomeModelo}:generateContent?key=${encodeURIComponent(geminiApiKey)}`;
-      let resp = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      // Algumas combinações de versão/modelo rejeitam responseSchema com HTTP 400.
-      // Tenta novamente sem o esquema formal, exigindo JSON no prompt; isso mantém
-      // o recurso Texto IA utilizável sem alterar o texto original dos alimentos.
-      if (resp.status === 400) {
-        let primeiraMensagem = '';
-        try {
-          const primeiroErro = await resp.clone().json();
-          primeiraMensagem = primeiroErro?.error?.message || '';
-        } catch (_) {}
-        const payloadAlternativo = {
-          systemInstruction: { parts: [{ text: systemPrompt + ' A resposta final deve ser exclusivamente um objeto JSON válido, sem markdown, com as propriedades descricao (string), observacoes (string) e itens (array de objetos com alimento, porcao, quantidade_g, proteinas_g, carboidratos_g e gorduras_g).' }] },
-          contents: [{ role: 'user', parts: userParts }],
-          generationConfig: { responseMimeType: 'application/json', temperature: 0.2, maxOutputTokens: 1800 }
-        };
-        const segundaResp = await fetch(apiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payloadAlternativo)
-        });
-        if (segundaResp.ok) {
-          resp = segundaResp;
-        } else {
-          let segundaMensagem = '';
-          try {
-            const segundoErro = await segundaResp.clone().json();
-            segundaMensagem = segundoErro?.error?.message || '';
-          } catch (_) {}
-          const detalheFinal = segundaMensagem || primeiraMensagem;
-          const apiError = new Error(`Gemini ${nomeModelo}: HTTP ${segundaResp.status}${detalheFinal ? ' — ' + detalheFinal : ''}`);
-          apiError.status = segundaResp.status;
-          apiError.detail = detalheFinal;
-          throw apiError;
-        }
-      } else if (!resp.ok) {
-        let detalhe = '';
-        try {
-          const erro = await resp.clone().json();
-          detalhe = erro?.error?.message || '';
-        } catch (_) {}
-        const apiError = new Error(`Gemini ${nomeModelo}: HTTP ${resp.status}${detalhe ? ' — ' + detalhe : ''}`);
-        apiError.status = resp.status;
-        apiError.detail = detalhe;
-        throw apiError;
-      }
+      // A chave Gemini fica no servidor; o navegador envia somente a sessão autenticada e o payload.
+      let resp = await chamarNutriGemini(payload);
 
       const json = await resp.json();
       const parts = json && json.candidates && json.candidates[0] && json.candidates[0].content
@@ -1595,7 +1578,7 @@
       if (status === 400) {
         showToast(`O Gemini rejeitou a solicitação (erro 400): ${detalhe || 'verifique a chave da API e tente descrever os alimentos de forma simples.'}`);
       } else if (status === 401 || status === 403) {
-        showToast('Acesso ao Gemini recusado. Confira a chave da API e as permissões em Configurações & Chaves.');
+        showToast('Acesso à IA recusado. Entre novamente no aplicativo e confira a configuração da função no Supabase.');
       } else if (status === 404) {
         // Diagnóstico V26: exibe o detalhe original retornado pela API para identificar
         // se o 404 se refere ao nome do modelo, versão da API ou outro recurso.
@@ -1963,7 +1946,7 @@
     $('#meta-carboidratos').value = state.metas.carboidratos;
     $('#meta-gorduras').value = state.metas.gorduras;
     $('#meta-agua').value = state.metas.agua;
-    $('#config-api-key').value = geminiApiKey;
+    $('#config-api-key').value = 'Configurada no Supabase';
     const oauthTokenField = $('#config-oauth-token');
     if (oauthTokenField) oauthTokenField.value = cloudToken;
     const googleClientField = $('#config-google-client-id');
@@ -2186,18 +2169,8 @@
     saveCloud(); showToast("Metas salvas!"); renderKPIs();
   };
 
-  $('#btn-toggle-apikey').onclick = () => {
-    const inp = $('#config-api-key');
-    inp.type = inp.type === 'password' ? 'text' : 'password';
-  };
-
-  $('#btn-salvar-apikey').onclick = async () => {
-    const keyInput = $('#config-api-key').value.trim();
-    if (!keyInput) { showToast("Cole sua chave."); return; }
-    geminiApiKey = keyInput;
-    localStorage.setItem('nutri_gemini_api_key', geminiApiKey);
-    showToast("Chave IA salva com sucesso!");
-  };
+  $('#btn-toggle-apikey').onclick = () => showToast('A chave Gemini é mantida em segurança nos Secrets do Supabase.');
+  $('#btn-salvar-apikey').onclick = () => showToast('Não é necessário cadastrar uma chave neste dispositivo. A IA usa o segredo do servidor.');
 
   const tabs = {
     'btn-tab-diario': 'view-diario', 'btn-tab-medidas': 'view-medidas',
