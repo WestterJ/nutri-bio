@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <!-- Diário Nutricional V33: datas locais, conflito de sincronização resolvido, importação validada -->
+  <!-- Diário Nutricional V34: módulo de treinos e objetivo nas metas (sobre a V33) -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Diário Nutricional V33</title>
+<title>Diário Nutricional V34</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
@@ -85,7 +85,7 @@
       <div class="bg-white text-[#003a70] p-2 rounded-xl font-bold text-xl shadow-inner">🥗</div>
       <div>
         <h1 class="text-lg md:text-xl font-bold tracking-tight">Diário Nutricional & Bioimpedância</h1>
-        <small class="text-emerald-100 opacity-90 text-xs">Versão V33</small>
+        <small class="text-emerald-100 opacity-90 text-xs">Versão V34</small>
       </div>
     </div>
     
@@ -98,6 +98,7 @@
       <button id="btn-tab-metas-nutri" class="bg-white/10 hover:bg-white/20 text-white text-xs md:text-sm font-semibold px-3 py-2 rounded-lg transition shadow-sm">🎯 Metas</button>
       <button id="btn-tab-medidas" class="bg-white/10 hover:bg-white/20 text-white text-xs md:text-sm font-semibold px-3 py-2 rounded-lg transition shadow-sm">📏 Medidas</button>
       <button id="btn-tab-bio" class="bg-white/10 hover:bg-white/20 text-white text-xs md:text-sm font-semibold px-3 py-2 rounded-lg transition shadow-sm">⚡ Bioimpedância</button>
+      <button id="btn-tab-treinos" class="bg-white/10 hover:bg-white/20 text-white text-xs md:text-sm font-semibold px-3 py-2 rounded-lg transition shadow-sm">🏋️ Treinos</button>
       <button id="btn-tab-graficos" class="bg-white/10 hover:bg-white/20 text-white text-xs md:text-sm font-semibold px-3 py-2 rounded-lg transition shadow-sm">📈 Gráficos</button>
       <button id="btn-tab-relatorio" class="bg-[#ffc20e] text-slate-900 font-bold text-xs md:text-sm px-3 py-2 rounded-lg transition shadow-sm">📄 Relatório</button>
       <button id="btn-tab-metas" class="bg-white/10 hover:bg-white/20 text-white text-xs md:text-sm font-semibold px-3 py-2 rounded-lg transition shadow-sm">⚙️ Configurações</button>
@@ -202,6 +203,12 @@
             <input type="number" id="meta-gorduras" step="any" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-[#0a5cad]">
           </div>
         </div>
+        <div class="border border-slate-200 rounded-xl p-3 space-y-2 bg-slate-50">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Objetivo</label>
+          <select id="meta-objetivo" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"><option value="manutencao">Manutenção</option><option value="perda">Perda de peso</option><option value="ganho">Ganho de massa</option><option value="recomposicao">Recomposição corporal</option></select>
+          <button type="button" id="btn-sugerir-metas" class="px-3 py-1.5 bg-sky-700 text-white rounded-lg text-xs font-bold">Sugerir metas para o objetivo</button>
+          <div id="sugestao-metas" class="hidden text-xs text-slate-700 space-y-1"></div>
+        </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Meta de Água Diária (ml)</label>
           <input type="number" id="meta-agua" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-[#0a5cad]">
@@ -282,6 +289,18 @@
   </div>
 
   <!-- MODULO: GRÁFICOS DE EVOLUÇÃO -->
+  <div id="view-treinos" class="hidden space-y-6">
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-wrap justify-between items-center gap-4">
+      <div><h2 class="text-lg font-bold text-slate-800">Treinos e Atividade Física</h2>
+      <p class="text-xs text-slate-500">Calorias estimadas por MET × peso × tempo, sem contar o repouso. Edite se tiver uma leitura externa.</p></div>
+      <button id="btn-novo-treino" class="bg-[#003a70] hover:bg-[#0a5cad] text-white text-xs md:text-sm font-semibold px-4 py-2 rounded-lg transition shadow">➕ Novo Treino</button>
+    </div>
+    <div id="treinos-resumo" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden"><div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse text-sm min-w-[520px]"><thead class="bg-[#003a70] text-white uppercase text-xs"><tr><th class="p-3">Data</th><th class="p-3">Treino</th><th class="p-3">Tempo</th><th class="p-3">Kcal</th><th class="p-3"></th></tr></thead><tbody id="tbody-treinos"></tbody></table>
+    </div></div>
+  </div>
+
   <div id="view-graficos" class="hidden space-y-6">
     <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
       <h2 class="text-lg font-bold text-slate-800">Gráficos de Evolução Nutricional e Corporal</h2>
@@ -601,6 +620,29 @@
 </dialog>
 
 <!-- Bioimpedância Modal -->
+<dialog id="modal-treino" class="rounded-2xl p-0 w-full max-w-lg shadow-2xl backdrop:bg-slate-900/50">
+  <div class="bg-[#003a70] text-white px-6 py-4 flex justify-between items-center border-b-4 border-[#ffc20e]">
+    <h3 id="modal-treino-title" class="font-bold text-lg">Registrar treino</h3>
+    <button type="button" id="modal-treino-close" class="text-white hover:text-amber-300 font-bold text-xl">&times;</button>
+  </div>
+  <form id="form-treino" class="p-6 space-y-4">
+    <input type="hidden" id="tr-id">
+    <div class="grid grid-cols-2 gap-3">
+      <div><label class="block text-xs font-semibold text-slate-600 mb-1">Data</label><input type="date" id="tr-data" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></div>
+      <div><label class="block text-xs font-semibold text-slate-600 mb-1">Treino</label><select id="tr-tipo" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"><option>Musculação A</option><option>Musculação B</option><option>Musculação C</option><option>Musculação D</option><option>Musculação (geral)</option><option>Só cardio</option></select></div>
+      <div><label class="block text-xs font-semibold text-slate-600 mb-1">Musculação (min)</label><input type="number" id="tr-min-musc" min="0" max="300" value="40" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></div>
+      <div><label class="block text-xs font-semibold text-slate-600 mb-1">Intensidade</label><select id="tr-intens" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"><option value="leve">Leve</option><option value="moderada" selected>Moderada</option><option value="intensa">Intensa</option></select></div>
+      <div><label class="block text-xs font-semibold text-slate-600 mb-1">Cardio</label><select id="tr-cardio-tipo" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"><option>Caminhada</option><option>Corrida / esteira</option><option>Bicicleta</option><option>Elíptico</option><option>Outro</option></select></div>
+      <div><label class="block text-xs font-semibold text-slate-600 mb-1">Cardio (min)</label><input type="number" id="tr-min-cardio" min="0" max="300" value="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></div>
+    </div>
+    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Calorias gastas (kcal)</label>
+      <div class="flex gap-2"><input type="number" id="tr-kcal" min="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"><button type="button" id="btn-tr-recalc" class="px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold whitespace-nowrap">Recalcular</button></div>
+      <p id="tr-kcal-info" class="text-[11px] text-slate-500 mt-1"></p></div>
+    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Observação</label><input type="text" id="tr-obs" maxlength="200" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></div>
+    <div class="pt-2 flex justify-end gap-2"><button type="button" id="modal-treino-cancel" class="px-4 py-2 border border-slate-300 rounded-xl text-sm">Cancelar</button><button type="submit" class="px-5 py-2 bg-[#ffc20e] text-slate-900 rounded-xl text-sm font-bold">Salvar Treino</button></div>
+  </form>
+</dialog>
+
 <dialog id="modal-bio" class="rounded-2xl p-0 w-full max-w-2xl shadow-2xl backdrop:bg-slate-900/50">
   <div class="bg-[#003a70] text-white px-6 py-4 flex justify-between items-center border-b-4 border-[#ffc20e]">
     <h3 id="modal-bio-title" class="font-bold text-lg">Registrar Bioimpedância (InBody)</h3>
@@ -2060,10 +2102,10 @@
         const parsed = JSON.parse(evt.target.result);
         const idOk = x => x && (x.id == null || /^[\w-]+$/.test(String(x.id)));
         const lista = k => parsed[k] === undefined || (Array.isArray(parsed[k]) && parsed[k].every(idOk));
-        const ok = parsed && Array.isArray(parsed.registros) && parsed.registros.every(r => idOk(r) && /^\d{4}-\d{2}-\d{2}$/.test(String(r.data || ''))) && lista('medidas') && lista('bio');
+        const ok = parsed && Array.isArray(parsed.registros) && parsed.registros.every(r => idOk(r) && /^\d{4}-\d{2}-\d{2}$/.test(String(r.data || ''))) && lista('medidas') && lista('bio') && lista('treinos');
         if (!ok) { showToast('Arquivo inválido: confira registros, medidas, bio e datas (AAAA-MM-DD).'); return; }
         customConfirm('Importar backup', `Substituir os dados atuais por ${parsed.registros.length} registros do arquivo?`, () => {
-          state = { registros: parsed.registros, medidas: parsed.medidas || [], bio: parsed.bio || [], metas: parsed.metas || defaultMetas };
+          state = { registros: parsed.registros, medidas: parsed.medidas || [], bio: parsed.bio || [], treinos: parsed.treinos || [], metas: parsed.metas || defaultMetas };
           saveCloud(); refreshAll(); showToast('Backup importado!');
         }, 'Importar', 'bg-blue-700 hover:bg-blue-800 text-white');
       } catch(err) { showToast("Erro no arquivo."); }
@@ -2088,6 +2130,7 @@
     $('#meta-carboidratos').value = state.metas.carboidratos;
     $('#meta-gorduras').value = state.metas.gorduras;
     $('#meta-agua').value = state.metas.agua;
+    $('#meta-objetivo').value = state.metas.objetivo || 'manutencao'; $('#sugestao-metas').classList.add('hidden');
     const oauthTokenField = $('#config-oauth-token');
     if (oauthTokenField) oauthTokenField.value = cloudToken;
     const googleClientField = $('#config-google-client-id');
@@ -2350,7 +2393,8 @@
       proteinas: parseFloat($('#meta-proteinas').value)||160,
       carboidratos: parseFloat($('#meta-carboidratos').value)||200,
       gorduras: parseFloat($('#meta-gorduras').value)||65,
-      agua: parseFloat($('#meta-agua').value)||3000
+      agua: parseFloat($('#meta-agua').value)||3000,
+      objetivo: $('#meta-objetivo').value || 'manutencao'
     };
     saveCloud(); showToast("Metas salvas!"); renderKPIs();
   };
@@ -2358,7 +2402,7 @@
 
   const tabs = {
     'btn-tab-diario': 'view-diario', 'btn-tab-metas-nutri': 'view-metas-nutri', 'btn-tab-medidas': 'view-medidas',
-    'btn-tab-bio': 'view-bio', 'btn-tab-graficos': 'view-graficos',
+    'btn-tab-bio': 'view-bio', 'btn-tab-treinos': 'view-treinos', 'btn-tab-graficos': 'view-graficos',
     'btn-tab-relatorio': 'view-relatorio', 'btn-tab-metas': 'view-metas'
   };
 
@@ -2378,10 +2422,110 @@
       if (btnId === 'btn-tab-graficos') renderGraficos();
       if (btnId === 'btn-tab-relatorio') { renderGraficos(); renderRelatorio(); }
       if (btnId === 'btn-tab-metas-nutri') carregarMetasForm();
+      if (btnId === 'btn-tab-treinos') renderTreinos();
     };
   });
 
+  // --- V34: treinos e objetivo ---
+  function garantirEstadoV34() {
+    if (!state.metas) state.metas = { ...defaultMetas };
+    if (!state.metas.objetivo) state.metas.objetivo = 'manutencao';
+    if (!Array.isArray(state.treinos)) state.treinos = [];
+    state.treinos = state.treinos.filter(t => t && /^\d{4}-\d{2}-\d{2}$/.test(String(t.data)));
+    state.treinos.forEach(t => { t.minMusc = Number(t.minMusc) || 0; t.minCardio = Number(t.minCardio) || 0; t.kcal = Number(t.kcal) || 0; t.tipo = String(t.tipo || 'Treino'); t.cardioTipo = String(t.cardioTipo || 'Outro'); t.id = String(t.id || ('t' + Math.random().toString(36).slice(2))); });
+  }
+  function pesoReferencia() {
+    const b = [...(state.bio || [])].filter(x => Number(x.peso) > 0).sort((a, c) => String(c.data).localeCompare(String(a.data)))[0];
+    return b ? Number(b.peso) : Number(state.metas.peso) || 80;
+  }
+  function estimarKcalTreino(t) {
+    const MUSC = { leve: 3.5, moderada: 5, intensa: 6 };
+    const CARD = { 'Caminhada': 3.8, 'Corrida / esteira': 9, 'Bicicleta': 7, 'Elíptico': 5, 'Outro': 5 };
+    const m = (MUSC[t.intensidade] || 5) - 1, c = (CARD[t.cardioTipo] || 5) - 1; // MET líquido: tira o repouso
+    return Math.round(pesoReferencia() * (m * (Number(t.minMusc) || 0) + c * (Number(t.minCardio) || 0)) / 60);
+  }
+  const modalTreino = $('#modal-treino');
+  let trManual = false;
+  const lerFormTreino = () => ({ tipo: $('#tr-tipo').value, intensidade: $('#tr-intens').value, minMusc: Number($('#tr-min-musc').value) || 0, cardioTipo: $('#tr-cardio-tipo').value, minCardio: Number($('#tr-min-cardio').value) || 0 });
+  function recalcularKcalForm() {
+    if (trManual) return;
+    $('#tr-kcal').value = estimarKcalTreino(lerFormTreino());
+    $('#tr-kcal-info').textContent = `Estimativa com ${fmtNum(pesoReferencia())} kg (margem de 20–30%).`;
+  }
+  ['#tr-intens', '#tr-min-musc', '#tr-cardio-tipo', '#tr-min-cardio'].forEach(q => $(q).addEventListener('input', recalcularKcalForm));
+  $('#tr-tipo').addEventListener('change', () => {
+    if ($('#tr-tipo').value === 'Só cardio') $('#tr-min-musc').value = 0; else if (!Number($('#tr-min-musc').value)) $('#tr-min-musc').value = 40;
+    recalcularKcalForm();
+  });
+  $('#tr-kcal').addEventListener('input', () => { trManual = true; $('#tr-kcal-info').textContent = 'Valor manual (não será recalculado).'; });
+  $('#btn-tr-recalc').onclick = () => { trManual = false; recalcularKcalForm(); };
+  function abrirTreino(id) {
+    garantirEstadoV34();
+    const t = id ? state.treinos.find(x => x.id === id) : null;
+    $('#form-treino').reset();
+    $('#tr-id').value = t ? t.id : '';
+    $('#tr-data').value = t ? t.data : hojeLocal();
+    $('#tr-tipo').value = t ? t.tipo : 'Musculação A';
+    $('#tr-intens').value = t ? (t.intensidade || 'moderada') : 'moderada';
+    $('#tr-min-musc').value = t ? t.minMusc : 40;
+    $('#tr-cardio-tipo').value = t ? t.cardioTipo : 'Caminhada';
+    $('#tr-min-cardio').value = t ? t.minCardio : 0;
+    $('#tr-obs').value = t ? (t.obs || '') : '';
+    trManual = !!(t && t.manual);
+    if (t) { $('#tr-kcal').value = t.kcal; $('#tr-kcal-info').textContent = t.manual ? 'Valor manual (não será recalculado).' : ''; } else recalcularKcalForm();
+    $('#modal-treino-title').textContent = t ? 'Editar treino' : 'Registrar treino';
+    modalTreino.showModal();
+  }
+  $('#btn-novo-treino').onclick = () => abrirTreino();
+  $('#modal-treino-close').onclick = $('#modal-treino-cancel').onclick = () => modalTreino.close();
+  $('#form-treino').onsubmit = e => {
+    e.preventDefault(); garantirEstadoV34();
+    const f = lerFormTreino();
+    if (f.minMusc + f.minCardio <= 0) { showToast('Informe o tempo de musculação ou de cardio.'); return; }
+    const id = $('#tr-id').value || ('t' + Date.now());
+    const reg = { id, data: $('#tr-data').value, ...f, kcal: Math.max(0, Math.round(Number($('#tr-kcal').value) || 0)), manual: trManual, obs: $('#tr-obs').value.trim().slice(0, 200) };
+    const i = state.treinos.findIndex(x => x.id === id);
+    if (i >= 0) state.treinos[i] = reg; else state.treinos.push(reg);
+    saveCloud(); renderTreinos(); modalTreino.close(); showToast('Treino salvo!');
+  };
+  $('#tbody-treinos').addEventListener('click', e => {
+    const b = e.target.closest('button[data-id]'); if (!b) return;
+    const id = b.dataset.id;
+    if (b.classList.contains('tr-edit')) abrirTreino(id);
+    else customConfirm('Excluir treino', 'Excluir este treino?', () => { state.treinos = state.treinos.filter(t => t.id !== id); saveCloud(); renderTreinos(); showToast('Treino excluído.'); }, 'Excluir');
+  });
+  function renderTreinos() {
+    garantirEstadoV34();
+    const hoje = hojeLocal();
+    const desde = d => { const x = new Date(); x.setDate(x.getDate() - d + 1); return `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDate())}`; };
+    const resumo = d => { const l = desde(d), s = state.treinos.filter(t => t.data >= l && t.data <= hoje); return { n: s.length, min: s.reduce((a, t) => a + t.minMusc + t.minCardio, 0), kcal: s.reduce((a, t) => a + t.kcal, 0) }; };
+    const r7 = resumo(7), r30 = resumo(30);
+    const card = (t, v, s) => `<div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm"><div class="text-[11px] text-slate-500 uppercase font-semibold">${t}</div><div class="text-xl font-bold text-slate-800">${v}</div><div class="text-[11px] text-slate-500">${s}</div></div>`;
+    $('#treinos-resumo').innerHTML = card('Sessões (7 dias)', r7.n, `${fmtNum(r7.min)} min`) + card('Kcal (7 dias)', fmtNum(r7.kcal), 'estimadas') + card('Sessões (30 dias)', r30.n, `${fmtNum(r30.min)} min`) + card('Kcal por sessão', r30.n ? fmtNum(Math.round(r30.kcal / r30.n)) : '–', 'média de 30 dias');
+    const rows = [...state.treinos].sort((a, b) => b.data.localeCompare(a.data));
+    $('#tbody-treinos').innerHTML = rows.length ? rows.map(t => `<tr class="border-b border-slate-100"><td class="p-3 whitespace-nowrap">${esc(fmtDataBr(t.data))}</td><td class="p-3">${esc(t.tipo)}${t.minCardio ? ' + ' + esc(t.cardioTipo) : ''}${t.obs ? `<div class="text-[11px] text-slate-500">${esc(t.obs)}</div>` : ''}</td><td class="p-3 whitespace-nowrap">${fmtNum(t.minMusc + t.minCardio)} min</td><td class="p-3 whitespace-nowrap font-semibold">${t.manual ? '✎ ' : '~'}${fmtNum(t.kcal)}</td><td class="p-3 whitespace-nowrap"><button type="button" class="tr-edit text-sky-700 text-xs font-bold mr-2" data-id="${esc(t.id)}">Editar</button><button type="button" class="tr-del text-red-600 text-xs font-bold" data-id="${esc(t.id)}">Excluir</button></td></tr>`).join('') : '<tr><td colspan="5" class="p-6 text-center text-slate-500 text-sm">Nenhum treino registrado.</td></tr>';
+  }
+  $('#btn-sugerir-metas').onclick = () => {
+    garantirEstadoV34();
+    const box = $('#sugestao-metas'); box.classList.remove('hidden');
+    const bio = [...state.bio].filter(x => Number(x.tmb) > 0).sort((a, c) => String(c.data).localeCompare(String(a.data)))[0];
+    if (!bio) { box.textContent = 'Registre uma bioimpedância com TMB para gerar a sugestão.'; return; }
+    const l = new Date(); l.setDate(l.getDate() - 27);
+    const ini = `${l.getFullYear()}-${pad(l.getMonth() + 1)}-${pad(l.getDate())}`;
+    const porSemana = state.treinos.filter(t => t.data >= ini).length / 4;
+    const fator = porSemana >= 6 ? 1.725 : porSemana >= 4 ? 1.55 : porSemana >= 2 ? 1.375 : 1.2;
+    const gasto = Number(bio.tmb) * fator, obj = $('#meta-objetivo').value, peso = pesoReferencia();
+    const ajuste = { manutencao: 1, perda: 0.85, ganho: 1.08, recomposicao: 0.95 }[obj] || 1;
+    const cal = Math.round(Math.max(gasto * ajuste, Number(bio.tmb)) / 10) * 10; // nunca abaixo da TMB
+    const prot = Math.round(peso * (obj === 'manutencao' ? 1.6 : 2)), gord = Math.round(peso * 0.8);
+    const carb = Math.max(0, Math.round((cal - prot * 4 - gord * 9) / 4));
+    box.innerHTML = `Gasto estimado ≈ <b>${fmtNum(Math.round(gasto))} kcal</b> (TMB ${fmtNum(bio.tmb)} × ${fator}; ${fmtNum(Math.round(porSemana * 10) / 10)} treinos/semana).<br>Sugestão: <b>${cal} kcal</b> · proteína ${prot} g · carboidratos ${carb} g · gorduras ${gord} g.<br><button type="button" id="btn-aplicar-sugestao" class="mt-1 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold">Aplicar no formulário</button> <span class="text-slate-500">São estimativas; confirme com seu nutricionista. Depois toque em Salvar Metas.</span>`;
+    $('#btn-aplicar-sugestao').onclick = () => { $('#meta-calorias').value = cal; $('#meta-proteinas').value = prot; $('#meta-carboidratos').value = carb; $('#meta-gorduras').value = gord; showToast('Valores aplicados. Toque em Salvar Metas.'); };
+  };
+
   function refreshAll() {
+    garantirEstadoV34();
+    renderTreinos();
     renderKPIs();
     renderTableDiario();
     renderMedidas();
