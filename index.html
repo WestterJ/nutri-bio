@@ -4,7 +4,7 @@
   <!-- Diário Nutricional V34: módulo de treinos e objetivo nas metas (sobre a V33) -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Diário Nutricional V34</title>
+<title>Diário Nutricional V34.1</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
@@ -85,7 +85,7 @@
       <div class="bg-white text-[#003a70] p-2 rounded-xl font-bold text-xl shadow-inner">🥗</div>
       <div>
         <h1 class="text-lg md:text-xl font-bold tracking-tight">Diário Nutricional & Bioimpedância</h1>
-        <small class="text-emerald-100 opacity-90 text-xs">Versão V34</small>
+        <small class="text-emerald-100 opacity-90 text-xs">Versão V34.1</small>
       </div>
     </div>
     
@@ -635,9 +635,14 @@
       <div><label class="block text-xs font-semibold text-slate-600 mb-1">Cardio</label><select id="tr-cardio-tipo" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"><option>Caminhada</option><option>Corrida / esteira</option><option>Bicicleta</option><option>Elíptico</option><option>Outro</option></select></div>
       <div><label class="block text-xs font-semibold text-slate-600 mb-1">Cardio (min)</label><input type="number" id="tr-min-cardio" min="0" max="300" value="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></div>
     </div>
-    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Calorias gastas (kcal)</label>
-      <div class="flex gap-2"><input type="number" id="tr-kcal" min="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"><button type="button" id="btn-tr-recalc" class="px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold whitespace-nowrap">Recalcular</button></div>
-      <p id="tr-kcal-info" class="text-[11px] text-slate-500 mt-1"></p></div>
+    <div class="space-y-1">
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Kcal musculação</label><input type="number" id="tr-kcal-musc" min="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></div>
+        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Kcal cardio</label><input type="number" id="tr-kcal-cardio" min="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></div>
+      </div>
+      <div class="flex justify-between items-center gap-2"><p id="tr-kcal-info" class="text-[11px] text-slate-500"></p><button type="button" id="btn-tr-recalc" class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold whitespace-nowrap">Recalcular estimativas</button></div>
+      <p class="text-sm font-bold text-slate-800">Total: <span id="tr-kcal-total">0</span> kcal</p>
+    </div>
     <div><label class="block text-xs font-semibold text-slate-600 mb-1">Observação</label><input type="text" id="tr-obs" maxlength="200" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></div>
     <div class="pt-2 flex justify-end gap-2"><button type="button" id="modal-treino-cancel" class="px-4 py-2 border border-slate-300 rounded-xl text-sm">Cancelar</button><button type="submit" class="px-5 py-2 bg-[#ffc20e] text-slate-900 rounded-xl text-sm font-bold">Salvar Treino</button></div>
   </form>
@@ -2432,33 +2437,47 @@
     if (!state.metas.objetivo) state.metas.objetivo = 'manutencao';
     if (!Array.isArray(state.treinos)) state.treinos = [];
     state.treinos = state.treinos.filter(t => t && /^\d{4}-\d{2}-\d{2}$/.test(String(t.data)));
-    state.treinos.forEach(t => { t.minMusc = Number(t.minMusc) || 0; t.minCardio = Number(t.minCardio) || 0; t.kcal = Number(t.kcal) || 0; t.tipo = String(t.tipo || 'Treino'); t.cardioTipo = String(t.cardioTipo || 'Outro'); t.id = String(t.id || ('t' + Math.random().toString(36).slice(2))); });
+    state.treinos.forEach(t => {
+      t.minMusc = Number(t.minMusc) || 0; t.minCardio = Number(t.minCardio) || 0; t.kcal = Number(t.kcal) || 0;
+      t.tipo = String(t.tipo || 'Treino'); t.cardioTipo = String(t.cardioTipo || 'Outro'); t.id = String(t.id || ('t' + Math.random().toString(36).slice(2)));
+      if (t.kcalMusc === undefined || t.kcalCardio === undefined) { // treinos da V34 (kcal único): divide pela proporção estimada
+        const k = kcalPorBloco(t), tot = k.musc + k.cardio;
+        t.kcalMusc = tot ? Math.round(t.kcal * k.musc / tot) : (t.minMusc ? t.kcal : 0);
+        t.kcalCardio = t.kcal - t.kcalMusc;
+        t.manualMusc = t.manualCardio = !!t.manual;
+      }
+      t.kcalMusc = Number(t.kcalMusc) || 0; t.kcalCardio = Number(t.kcalCardio) || 0; t.kcal = t.kcalMusc + t.kcalCardio;
+    });
   }
   function pesoReferencia() {
     const b = [...(state.bio || [])].filter(x => Number(x.peso) > 0).sort((a, c) => String(c.data).localeCompare(String(a.data)))[0];
     return b ? Number(b.peso) : Number(state.metas.peso) || 80;
   }
-  function estimarKcalTreino(t) {
+  function kcalPorBloco(t) {
     const MUSC = { leve: 3.5, moderada: 5, intensa: 6 };
     const CARD = { 'Caminhada': 3.8, 'Corrida / esteira': 9, 'Bicicleta': 7, 'Elíptico': 5, 'Outro': 5 };
-    const m = (MUSC[t.intensidade] || 5) - 1, c = (CARD[t.cardioTipo] || 5) - 1; // MET líquido: tira o repouso
-    return Math.round(pesoReferencia() * (m * (Number(t.minMusc) || 0) + c * (Number(t.minCardio) || 0)) / 60);
+    const m = (MUSC[t.intensidade] || 5) - 1, c = (CARD[t.cardioTipo] || 5) - 1, p = pesoReferencia(); // MET líquido: tira o repouso
+    return { musc: Math.round(p * m * (Number(t.minMusc) || 0) / 60), cardio: Math.round(p * c * (Number(t.minCardio) || 0) / 60) };
   }
   const modalTreino = $('#modal-treino');
-  let trManual = false;
+  let trManualM = false, trManualC = false;
   const lerFormTreino = () => ({ tipo: $('#tr-tipo').value, intensidade: $('#tr-intens').value, minMusc: Number($('#tr-min-musc').value) || 0, cardioTipo: $('#tr-cardio-tipo').value, minCardio: Number($('#tr-min-cardio').value) || 0 });
+  function atualizarTotalTreino() { $('#tr-kcal-total').textContent = fmtNum((Number($('#tr-kcal-musc').value) || 0) + (Number($('#tr-kcal-cardio').value) || 0)); }
   function recalcularKcalForm() {
-    if (trManual) return;
-    $('#tr-kcal').value = estimarKcalTreino(lerFormTreino());
-    $('#tr-kcal-info').textContent = `Estimativa com ${fmtNum(pesoReferencia())} kg (margem de 20–30%).`;
+    const k = kcalPorBloco(lerFormTreino());
+    if (!trManualM) $('#tr-kcal-musc').value = k.musc;
+    if (!trManualC) $('#tr-kcal-cardio').value = k.cardio;
+    $('#tr-kcal-info').textContent = `Estimativa com ${fmtNum(pesoReferencia())} kg (margem de 20–30%). Editar um campo o marca como manual.`;
+    atualizarTotalTreino();
   }
   ['#tr-intens', '#tr-min-musc', '#tr-cardio-tipo', '#tr-min-cardio'].forEach(q => $(q).addEventListener('input', recalcularKcalForm));
   $('#tr-tipo').addEventListener('change', () => {
     if ($('#tr-tipo').value === 'Só cardio') $('#tr-min-musc').value = 0; else if (!Number($('#tr-min-musc').value)) $('#tr-min-musc').value = 40;
     recalcularKcalForm();
   });
-  $('#tr-kcal').addEventListener('input', () => { trManual = true; $('#tr-kcal-info').textContent = 'Valor manual (não será recalculado).'; });
-  $('#btn-tr-recalc').onclick = () => { trManual = false; recalcularKcalForm(); };
+  $('#tr-kcal-musc').addEventListener('input', () => { trManualM = true; atualizarTotalTreino(); });
+  $('#tr-kcal-cardio').addEventListener('input', () => { trManualC = true; atualizarTotalTreino(); });
+  $('#btn-tr-recalc').onclick = () => { trManualM = false; trManualC = false; recalcularKcalForm(); };
   function abrirTreino(id) {
     garantirEstadoV34();
     const t = id ? state.treinos.find(x => x.id === id) : null;
@@ -2471,8 +2490,8 @@
     $('#tr-cardio-tipo').value = t ? t.cardioTipo : 'Caminhada';
     $('#tr-min-cardio').value = t ? t.minCardio : 0;
     $('#tr-obs').value = t ? (t.obs || '') : '';
-    trManual = !!(t && t.manual);
-    if (t) { $('#tr-kcal').value = t.kcal; $('#tr-kcal-info').textContent = t.manual ? 'Valor manual (não será recalculado).' : ''; } else recalcularKcalForm();
+    trManualM = !!(t && t.manualMusc); trManualC = !!(t && t.manualCardio);
+    if (t) { $('#tr-kcal-musc').value = t.kcalMusc; $('#tr-kcal-cardio').value = t.kcalCardio; $('#tr-kcal-info').textContent = (trManualM || trManualC) ? 'Há valores manuais (✎) neste treino.' : ''; atualizarTotalTreino(); } else recalcularKcalForm();
     $('#modal-treino-title').textContent = t ? 'Editar treino' : 'Registrar treino';
     modalTreino.showModal();
   }
@@ -2483,7 +2502,8 @@
     const f = lerFormTreino();
     if (f.minMusc + f.minCardio <= 0) { showToast('Informe o tempo de musculação ou de cardio.'); return; }
     const id = $('#tr-id').value || ('t' + Date.now());
-    const reg = { id, data: $('#tr-data').value, ...f, kcal: Math.max(0, Math.round(Number($('#tr-kcal').value) || 0)), manual: trManual, obs: $('#tr-obs').value.trim().slice(0, 200) };
+    const reg = { id, data: $('#tr-data').value, ...f, kcalMusc: Math.max(0, Math.round(Number($('#tr-kcal-musc').value) || 0)), kcalCardio: Math.max(0, Math.round(Number($('#tr-kcal-cardio').value) || 0)), manualMusc: trManualM, manualCardio: trManualC, obs: $('#tr-obs').value.trim().slice(0, 200) };
+    reg.kcal = reg.kcalMusc + reg.kcalCardio;
     const i = state.treinos.findIndex(x => x.id === id);
     if (i >= 0) state.treinos[i] = reg; else state.treinos.push(reg);
     saveCloud(); renderTreinos(); modalTreino.close(); showToast('Treino salvo!');
@@ -2503,7 +2523,7 @@
     const card = (t, v, s) => `<div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm"><div class="text-[11px] text-slate-500 uppercase font-semibold">${t}</div><div class="text-xl font-bold text-slate-800">${v}</div><div class="text-[11px] text-slate-500">${s}</div></div>`;
     $('#treinos-resumo').innerHTML = card('Sessões (7 dias)', r7.n, `${fmtNum(r7.min)} min`) + card('Kcal (7 dias)', fmtNum(r7.kcal), 'estimadas') + card('Sessões (30 dias)', r30.n, `${fmtNum(r30.min)} min`) + card('Kcal por sessão', r30.n ? fmtNum(Math.round(r30.kcal / r30.n)) : '–', 'média de 30 dias');
     const rows = [...state.treinos].sort((a, b) => b.data.localeCompare(a.data));
-    $('#tbody-treinos').innerHTML = rows.length ? rows.map(t => `<tr class="border-b border-slate-100"><td class="p-3 whitespace-nowrap">${esc(fmtDataBr(t.data))}</td><td class="p-3">${esc(t.tipo)}${t.minCardio ? ' + ' + esc(t.cardioTipo) : ''}${t.obs ? `<div class="text-[11px] text-slate-500">${esc(t.obs)}</div>` : ''}</td><td class="p-3 whitespace-nowrap">${fmtNum(t.minMusc + t.minCardio)} min</td><td class="p-3 whitespace-nowrap font-semibold">${t.manual ? '✎ ' : '~'}${fmtNum(t.kcal)}</td><td class="p-3 whitespace-nowrap"><button type="button" class="tr-edit text-sky-700 text-xs font-bold mr-2" data-id="${esc(t.id)}">Editar</button><button type="button" class="tr-del text-red-600 text-xs font-bold" data-id="${esc(t.id)}">Excluir</button></td></tr>`).join('') : '<tr><td colspan="5" class="p-6 text-center text-slate-500 text-sm">Nenhum treino registrado.</td></tr>';
+    $('#tbody-treinos').innerHTML = rows.length ? rows.map(t => `<tr class="border-b border-slate-100"><td class="p-3 whitespace-nowrap">${esc(fmtDataBr(t.data))}</td><td class="p-3">${esc(t.tipo)}${t.minCardio ? ' + ' + esc(t.cardioTipo) : ''}${t.obs ? `<div class="text-[11px] text-slate-500">${esc(t.obs)}</div>` : ''}</td><td class="p-3 whitespace-nowrap">${fmtNum(t.minMusc + t.minCardio)} min</td><td class="p-3 whitespace-nowrap font-semibold">${(t.manualMusc || t.manualCardio) ? '✎ ' : '~'}${fmtNum(t.kcal)}${t.kcalMusc && t.kcalCardio ? `<div class="text-[11px] font-normal text-slate-500">musc ${fmtNum(t.kcalMusc)} · cardio ${fmtNum(t.kcalCardio)}</div>` : ''}</td><td class="p-3 whitespace-nowrap"><button type="button" class="tr-edit text-sky-700 text-xs font-bold mr-2" data-id="${esc(t.id)}">Editar</button><button type="button" class="tr-del text-red-600 text-xs font-bold" data-id="${esc(t.id)}">Excluir</button></td></tr>`).join('') : '<tr><td colspan="5" class="p-6 text-center text-slate-500 text-sm">Nenhum treino registrado.</td></tr>';
   }
   $('#btn-sugerir-metas').onclick = () => {
     garantirEstadoV34();
