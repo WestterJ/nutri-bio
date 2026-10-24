@@ -85,7 +85,7 @@
       <div class="bg-white text-[#003a70] p-2 rounded-xl font-bold text-xl shadow-inner">🥗</div>
       <div>
         <h1 class="text-lg md:text-xl font-bold tracking-tight">Diário Nutricional & Bioimpedância</h1>
-        <small class="text-emerald-100 opacity-90 text-xs">Versão V32.9</small>
+        <small class="text-emerald-100 opacity-90 text-xs">Versão V33</small>
       </div>
     </div>
     
@@ -1840,7 +1840,7 @@
     if (!supabaseClient || !supabaseUser) { showToast('Entre na sua conta para usar a IA.'); return; }
     if (!file || file.type !== 'application/pdf') { showToast('Selecione um arquivo PDF.'); return; }
     if (file.size > 6.5 * 1024 * 1024) { showToast('PDF muito grande (máximo 6,5 MB).'); return; }
-    const btn = $('#btn-bio-ia'); btn.disabled = true; bioIaStatus('Lendo o PDF com IA...');
+    const btn = $('#btn-bio-ia'); btn.disabled = true; bioIaStatus('Lendo o PDF com IA... pode levar até 1–2 minutos.');
     $('#bio-ia-lista').classList.add('hidden'); $('#btn-bio-ia-importar').classList.add('hidden');
     try {
       const dataURL = await lerArquivoComoDataURL(file);
