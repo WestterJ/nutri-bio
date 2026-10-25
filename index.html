@@ -4,7 +4,7 @@
   <!-- Diário Nutricional V37: filtro sem estimativa + V36: análise de IA da alimentação por período (sobre a V35.1) -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Diário Nutricional V37</title>
+<title>Diário Nutricional V38</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
@@ -86,7 +86,7 @@
       <div class="bg-white text-[#003a70] p-2 rounded-xl font-bold text-xl shadow-inner">🥗</div>
       <div>
         <h1 class="text-lg md:text-xl font-bold tracking-tight">Diário Nutricional & Bioimpedância</h1>
-        <small class="text-emerald-100 opacity-90 text-xs">Versão V37</small>
+        <small class="text-emerald-100 opacity-90 text-xs">Versão V38</small>
       </div>
     </div>
     
@@ -133,6 +133,10 @@
           <label class="flex items-center gap-1.5 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 cursor-pointer select-none">
             <input type="checkbox" id="filtro-sem-estimativa" class="accent-amber-600">
             Sem estimativa <span id="contador-sem-estimativa" class="bg-amber-200 rounded-full px-1.5 text-[11px]">0</span>
+          </label>
+          <label class="flex items-center gap-1.5 text-xs font-semibold text-sky-800 bg-sky-50 border border-sky-200 rounded-lg px-3 py-2 cursor-pointer select-none" title="Dias anteriores a hoje com menos de 4 refeições lançadas">
+            <input type="checkbox" id="filtro-poucas-refeicoes" class="accent-sky-600">
+            Menos de 4 refeições <span id="contador-poucas-refeicoes" class="bg-sky-200 rounded-full px-1.5 text-[11px]">0</span>
           </label>
         </div>
         
@@ -1266,6 +1270,16 @@
   // Refeição sem estimativa: tem alimentos descritos, mas sem calorias estimadas (mesmo critério da análise de IA).
   function semEstimativa(r) { return !(+r.calorias > 0) && String(r.alimentos || '').trim() !== ''; }
 
+  // Dias (anteriores a hoje) com menos de 4 refeições lançadas.
+  function refeicoesPorDia() { const c = {}; state.registros.forEach(r => { c[r.data] = (c[r.data] || 0) + 1; }); return c; }
+  const diaIncompleto = (cont, data) => data < hojeLocal() && cont[data] < 4;
+  // Próxima refeição do lançamento: segue Café da Manhã > Almoço > Lanche da Tarde > Jantar e escolhe a primeira que falta no dia.
+  const ORDEM_REFEICOES = ['Café da Manhã', 'Almoço', 'Lanche da Tarde', 'Jantar'];
+  function proximaRefeicao(data) {
+    const feitas = new Set(state.registros.filter(r => r.data === data).map(r => r.refeicao));
+    return ORDEM_REFEICOES.find(m => !feitas.has(m)) || 'Ceia';
+  }
+
   function getFilteredRegistros() {
     const tipo = $('#filtro-periodo').value;
     const busca = $('#busca-input').value.toLowerCase().trim();
@@ -1273,8 +1287,10 @@
     const anoAtual = new Date().getFullYear().toString();
 
     const soSemEstimativa = $('#filtro-sem-estimativa').checked;
+    const soPoucas = $('#filtro-poucas-refeicoes').checked, cont = soPoucas ? refeicoesPorDia() : null;
     return state.registros.filter(r => {
       if (soSemEstimativa && !semEstimativa(r)) return false;
+      if (soPoucas && !diaIncompleto(cont, r.data)) return false;
       if (busca) {
         const matchText = (r.alimentos + ' ' + r.refeicao + ' ' + r.obs + ' ' + r.data).toLowerCase();
         if (!matchText.includes(busca)) return false;
@@ -1314,6 +1330,7 @@
 
   $('#busca-input').addEventListener('input', () => refreshAll());
   $('#filtro-sem-estimativa').addEventListener('change', () => refreshAll());
+  $('#filtro-poucas-refeicoes').addEventListener('change', () => refreshAll());
   $('#filtro-data-inicio').addEventListener('change', () => refreshAll());
   $('#filtro-data-fim').addEventListener('change', () => refreshAll());
 
@@ -1373,9 +1390,10 @@
     const tbody = $('#table-body');
     const filtered = getFilteredRegistros();
     $('#contador-sem-estimativa').textContent = state.registros.filter(semEstimativa).length;
+    { const c = refeicoesPorDia(); $('#contador-poucas-refeicoes').textContent = Object.keys(c).filter(d => diaIncompleto(c, d)).length; }
 
     if (filtered.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="10" class="text-center py-12 text-slate-400">${$('#filtro-sem-estimativa').checked ? 'Nenhuma refeição sem estimativa neste período. 🎉' : 'Nenhum registro encontrado no período.'}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10" class="text-center py-12 text-slate-400">${$('#filtro-poucas-refeicoes').checked ? 'Nenhum dia com menos de 4 refeições neste período. 🎉' : $('#filtro-sem-estimativa').checked ? 'Nenhuma refeição sem estimativa neste período. 🎉' : 'Nenhum registro encontrado no período.'}</td></tr>`;
       return;
     }
 
@@ -1408,7 +1426,8 @@
     $('#modal-title').textContent = 'Novo Registro Alimentar';
     $('#reg-id').value = '';
     $('#reg-data').value = hojeLocal();
-    $('#reg-refeicao').value = 'Almoço';
+    $('#reg-refeicao').value = proximaRefeicao($('#reg-data').value);
+    modalReg.dataset.auto = '1';
     $('#reg-alimentos').value = ''; $('#reg-calorias').value = '';
     $('#reg-proteinas').value = ''; $('#reg-carboidratos').value = '';
     $('#reg-gorduras').value = ''; $('#reg-agua').value = ''; $('#reg-obs').value = '';
@@ -1460,6 +1479,10 @@
   $('#modal-close').onclick = () => modalReg.close();
   $('#modal-cancel').onclick = () => modalReg.close();
   $('#btn-novo-registro').onclick = () => abrirModalNovo();
+  // Novo lançamento: ao trocar a data, sugere a refeição que falta naquele dia (até o usuário escolher manualmente).
+  $('#reg-data').addEventListener('change', () => { if (modalReg.dataset.auto === '1' && !$('#reg-id').value) $('#reg-refeicao').value = proximaRefeicao($('#reg-data').value); });
+  $('#reg-refeicao').addEventListener('change', () => { delete modalReg.dataset.auto; });
+  modalReg.addEventListener('close', () => { delete modalReg.dataset.auto; });
 
   // A estimativa deve usar a API; não inventa uma refeição nem soma palavras-chave offline.
   const GEMINI_MODEL = 'gemini-3.8-flash';
