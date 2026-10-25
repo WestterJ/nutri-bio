@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <!-- Diário Nutricional V36: análise de IA da alimentação por período (sobre a V35.1) -->
+  <!-- Diário Nutricional V37: filtro sem estimativa + V36: análise de IA da alimentação por período (sobre a V35.1) -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Diário Nutricional V36</title>
+<title>Diário Nutricional V37</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
@@ -86,7 +86,7 @@
       <div class="bg-white text-[#003a70] p-2 rounded-xl font-bold text-xl shadow-inner">🥗</div>
       <div>
         <h1 class="text-lg md:text-xl font-bold tracking-tight">Diário Nutricional & Bioimpedância</h1>
-        <small class="text-emerald-100 opacity-90 text-xs">Versão V36</small>
+        <small class="text-emerald-100 opacity-90 text-xs">Versão V37</small>
       </div>
     </div>
     
@@ -130,6 +130,10 @@
             <span class="text-xs text-slate-500">até</span>
             <input type="date" id="filtro-data-fim" class="text-xs px-2 py-1.5 border border-slate-300 rounded-lg">
           </div>
+          <label class="flex items-center gap-1.5 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 cursor-pointer select-none">
+            <input type="checkbox" id="filtro-sem-estimativa" class="accent-amber-600">
+            Sem estimativa <span id="contador-sem-estimativa" class="bg-amber-200 rounded-full px-1.5 text-[11px]">0</span>
+          </label>
         </div>
         
         <div class="flex items-center gap-2">
@@ -355,6 +359,10 @@
     </div>
     <div id="ia-analise-status" class="hidden text-xs text-slate-600" role="status"></div>
     <div id="ia-analise-resultado" class="space-y-3"></div>
+    <div class="border-t border-slate-200 pt-3">
+      <div class="text-xs font-bold text-slate-600 uppercase mb-2">Análises anteriores</div>
+      <div id="ia-historico" class="space-y-2 text-sm"><p class="text-xs text-slate-400">Carregando...</p></div>
+    </div>
     <p class="text-[11px] text-slate-500">Dados agregados do diário (sem nome) são enviados ao Gemini. Não substitui a orientação de um nutricionista.</p>
   </div>
   <div class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-8 shadow-sm space-y-6 print-only" id="relatorio-imprimivel">
@@ -1255,13 +1263,18 @@
     updateCloudStatusPill();
   }
 
+  // Refeição sem estimativa: tem alimentos descritos, mas sem calorias estimadas (mesmo critério da análise de IA).
+  function semEstimativa(r) { return !(+r.calorias > 0) && String(r.alimentos || '').trim() !== ''; }
+
   function getFilteredRegistros() {
     const tipo = $('#filtro-periodo').value;
     const busca = $('#busca-input').value.toLowerCase().trim();
     const hoje = hojeLocal();
     const anoAtual = new Date().getFullYear().toString();
 
+    const soSemEstimativa = $('#filtro-sem-estimativa').checked;
     return state.registros.filter(r => {
+      if (soSemEstimativa && !semEstimativa(r)) return false;
       if (busca) {
         const matchText = (r.alimentos + ' ' + r.refeicao + ' ' + r.obs + ' ' + r.data).toLowerCase();
         if (!matchText.includes(busca)) return false;
@@ -1300,6 +1313,7 @@
   });
 
   $('#busca-input').addEventListener('input', () => refreshAll());
+  $('#filtro-sem-estimativa').addEventListener('change', () => refreshAll());
   $('#filtro-data-inicio').addEventListener('change', () => refreshAll());
   $('#filtro-data-fim').addEventListener('change', () => refreshAll());
 
@@ -1358,9 +1372,10 @@
   function renderTableDiario() {
     const tbody = $('#table-body');
     const filtered = getFilteredRegistros();
+    $('#contador-sem-estimativa').textContent = state.registros.filter(semEstimativa).length;
 
     if (filtered.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="10" class="text-center py-12 text-slate-400">Nenhum registro encontrado no período.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10" class="text-center py-12 text-slate-400">${$('#filtro-sem-estimativa').checked ? 'Nenhuma refeição sem estimativa neste período. 🎉' : 'Nenhum registro encontrado no período.'}</td></tr>`;
       return;
     }
 
@@ -2058,10 +2073,10 @@
     };
   }
   function iaStatus(msg) { const el = $('#ia-analise-status'); el.textContent = msg || ''; el.classList.toggle('hidden', !msg); }
-  function renderAnaliseIA(a, dados) {
+  function renderAnaliseIA(a, dados, quando) {
     const lista = (t, arr, cor) => Array.isArray(arr) && arr.length ? `<div><div class="text-xs font-bold ${cor} mb-1">${t}</div><ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">${arr.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : '';
     const aviso = dados.refeicoes_sem_estimativa ? `<p class="text-xs bg-amber-50 border border-amber-200 rounded-lg p-2 text-amber-900">${dados.refeicoes_sem_estimativa} refeição(ões) sem calorias estimadas ficaram de fora das médias. Reabra-as e refaça a estimativa para uma análise mais fiel.</p>` : '';
-    $('#ia-analise-resultado').innerHTML = `<div class="text-xs text-slate-500">Últimos ${dados.periodo_dias} dias · ${dados.dias_com_calorias} dia(s) com calorias · gerado em ${esc(new Date().toLocaleString('pt-BR'))}</div>
+    $('#ia-analise-resultado').innerHTML = `<div class="text-xs text-slate-500">Últimos ${dados.periodo_dias} dias · ${dados.dias_com_calorias} dia(s) com calorias · gerado em ${esc(new Date(quando || Date.now()).toLocaleString('pt-BR'))}</div>
       <p class="text-sm text-slate-800">${esc(a.resumo)}</p>${aviso}
       ${a.qualidade_dados ? `<p class="text-xs text-slate-500">${esc(a.qualidade_dados)}</p>` : ''}
       ${lista('Pontos fortes', a.pontos_fortes, 'text-emerald-700')}${lista('Pontos de atenção', a.pontos_atencao, 'text-amber-700')}${lista('Sugestões', a.sugestoes, 'text-sky-700')}
@@ -2079,10 +2094,45 @@
       if (!txt) throw new Error('A IA não retornou conteúdo.');
       const a = JSON.parse(txt.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim());
       renderAnaliseIA(a, dados); iaStatus('');
+      salvarAnaliseIA(a, dados);
     } catch (err) { iaStatus(''); showToast('Falha na análise: ' + (err.message || 'erro desconhecido')); }
     finally { btn.disabled = false; }
   }
   $('#btn-ia-analise').onclick = gerarAnaliseIA;
+
+  // --- V37: histórico das análises de IA no Supabase (tabela ia_analises) ---
+  let iaHistorico = [];
+  async function salvarAnaliseIA(a, dados) {
+    try {
+      const { error } = await supabaseClient.from('ia_analises').insert({ user_id: supabaseUser.id, periodo_dias: dados.periodo_dias, resultado: a, dados, modelo: GEMINI_MODEL });
+      if (error) throw error;
+      carregarHistoricoAnalises();
+    } catch (err) { console.error('Erro ao salvar análise:', err); showToast('A análise foi exibida, mas não foi salva no histórico: ' + (err.message || 'erro desconhecido')); }
+  }
+  async function carregarHistoricoAnalises() {
+    const box = $('#ia-historico'); if (!box) return;
+    if (!supabaseClient || !supabaseUser) { box.innerHTML = '<p class="text-xs text-slate-400">Entre na sua conta para ver o histórico.</p>'; return; }
+    const { data, error } = await supabaseClient.from('ia_analises').select('id,created_at,periodo_dias,resultado,dados').eq('user_id', supabaseUser.id).order('created_at', { ascending: false }).limit(50);
+    if (error) { box.innerHTML = '<p class="text-xs text-red-600">Não foi possível carregar o histórico (a tabela ia_analises existe no Supabase?).</p>'; return; }
+    iaHistorico = data || [];
+    if (!iaHistorico.length) { box.innerHTML = '<p class="text-xs text-slate-400">Nenhuma análise salva ainda.</p>'; return; }
+    box.innerHTML = iaHistorico.map(h => `<div class="flex items-start gap-2 border border-slate-200 rounded-lg p-2">
+      <button type="button" class="flex-1 text-left" onclick="window.abrirAnaliseIA('${h.id}')">
+        <div class="text-xs font-semibold text-sky-800">${esc(new Date(h.created_at).toLocaleString('pt-BR'))} · últimos ${h.periodo_dias} dias</div>
+        <div class="text-xs text-slate-600 line-clamp-2">${esc(h.resultado && h.resultado.resumo || '')}</div></button>
+      <button type="button" class="text-xs text-red-600 px-2 py-1" aria-label="Excluir análise" onclick="window.excluirAnaliseIA('${h.id}')">🗑️</button></div>`).join('');
+  }
+  window.abrirAnaliseIA = id => {
+    const h = iaHistorico.find(x => x.id === id); if (!h) return;
+    renderAnaliseIA(h.resultado, h.dados, h.created_at);
+    $('#ia-analise-resultado').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  window.excluirAnaliseIA = async id => {
+    if (!confirm('Excluir esta análise do histórico?')) return;
+    const { error } = await supabaseClient.from('ia_analises').delete().eq('id', id).eq('user_id', supabaseUser.id);
+    if (error) { showToast('Falha ao excluir: ' + error.message); return; }
+    carregarHistoricoAnalises();
+  };
 
   // --- V35: relatório de atividade física ---
   function renderRelAtividade() {
@@ -2555,7 +2605,7 @@
       $('#' + tabs[btnId]).classList.remove('hidden');
 
       if (btnId === 'btn-tab-graficos') renderGraficos();
-      if (btnId === 'btn-tab-relatorio') { renderGraficos(); renderRelatorio(); }
+      if (btnId === 'btn-tab-relatorio') { renderGraficos(); renderRelatorio(); carregarHistoricoAnalises(); }
       if (btnId === 'btn-tab-metas-nutri') carregarMetasForm();
       if (btnId === 'btn-tab-treinos') renderTreinos();
     };
