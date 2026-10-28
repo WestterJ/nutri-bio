@@ -15,6 +15,7 @@
   function unlockApp() {
     document.body.classList.remove('auth-locked');
     const gate=$('#auth-gate'); if(gate) gate.setAttribute('aria-hidden','true');
+    ajustarAlturaCabecalho(); // V40: menu lateral logo abaixo do cabeçalho
   }
   function showRecoveryForm() {
     passwordRecoveryMode = true;

@@ -78,7 +78,15 @@
       Number.isFinite(gordura) && gordura >= 0 && gordura <= 1000;
   }
 
-  async function chamarNutriGemini(payload) {
+  // V40: chamada com tempo máximo, novas tentativas automáticas e cancelamento.
+  // Erros temporários (limite 429 sem cota esgotada, 500/502/503/504, rede, tempo esgotado) são repetidos
+  // até 3 vezes com espera crescente. Cota esgotada, 400, 401/403 e 404 não são repetidos.
+  let iaCancelamento = null;
+  const esperar = (ms, sinal) => new Promise((ok, falha) => {
+    const t = setTimeout(ok, ms);
+    if (sinal) sinal.addEventListener('abort', () => { clearTimeout(t); falha(Object.assign(new Error('Cancelado.'), { cancelado: true })); }, { once: true });
+  });
+  async function chamarNutriGeminiUmaVez(payload, timeoutMs, sinalExterno) {
     if (!supabaseClient || !supabaseConfig.url || !supabaseConfig.key) {
       throw new Error('A configuração do Supabase não está disponível. Recarregue o aplicativo e entre novamente.');
     }
@@ -90,28 +98,83 @@
       throw err;
     }
     const endpoint = `${supabaseConfig.url.replace(/\/$/, '')}/functions/v1/dynamic-service`;
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-        'apikey': supabaseConfig.key
-      },
-      body: JSON.stringify(payload)
-    });
-    if (!response.ok) {
-      let detail = `Serviço de IA retornou HTTP ${response.status}.`;
-      try {
-        const errorBody = await response.clone().json();
-        detail = errorBody?.error || errorBody?.message || detail;
-      } catch (_) {}
-      const error = new Error(detail);
-      error.status = response.status;
-      error.detail = detail;
-      throw error;
+    const ctrl = new AbortController();
+    let estourou = false;
+    const timer = setTimeout(() => { estourou = true; ctrl.abort(); }, timeoutMs);
+    const repassar = () => ctrl.abort();
+    if (sinalExterno) sinalExterno.addEventListener('abort', repassar, { once: true });
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}`, 'apikey': supabaseConfig.key },
+        body: JSON.stringify(payload),
+        signal: ctrl.signal
+      });
+      if (!response.ok) {
+        let detail = `Serviço de IA retornou HTTP ${response.status}.`;
+        try {
+          const errorBody = await response.clone().json();
+          detail = errorBody?.error?.message || errorBody?.error || errorBody?.message || detail;
+          if (typeof detail !== 'string') detail = JSON.stringify(detail);
+        } catch (_) {}
+        const error = new Error(detail);
+        error.status = response.status;
+        error.detail = detail;
+        throw error;
+      }
+      return response;
+    } catch (e) {
+      if (e && e.name === 'AbortError') {
+        if (estourou) throw Object.assign(new Error('A IA demorou mais que o limite.'), { status: 408, tempoEsgotado: true });
+        throw Object.assign(new Error('Cancelado.'), { cancelado: true });
+      }
+      throw e;
+    } finally {
+      clearTimeout(timer);
+      if (sinalExterno) sinalExterno.removeEventListener('abort', repassar);
     }
-    return response;
   }
+  function erroTemporarioIA(e) {
+    if (!e || e.cancelado) return false;
+    const st = Number(e.status);
+    if (st === 429) return !/quota|daily|per.day|limit: 0|billing/i.test(String(e.detail || e.message || ''));
+    return [408, 500, 502, 503, 504].includes(st) || e.name === 'TypeError';
+  }
+  async function chamarNutriGemini(payload, opcoes = {}) {
+    const tentativas = opcoes.tentativas || 3;
+    const timeoutMs = opcoes.timeoutMs || (payload && payload.modo === 'relatorio' ? 90000 : 45000);
+    const aviso = typeof opcoes.onStatus === 'function' ? opcoes.onStatus : () => {};
+    const sinal = opcoes.signal;
+    let ultimo;
+    for (let n = 1; n <= tentativas; n++) {
+      if (sinal && sinal.aborted) throw Object.assign(new Error('Cancelado.'), { cancelado: true });
+      try {
+        if (n > 1) aviso(`Tentativa ${n} de ${tentativas}...`);
+        return await chamarNutriGeminiUmaVez(payload, timeoutMs, sinal);
+      } catch (e) {
+        ultimo = e;
+        if (n === tentativas || !erroTemporarioIA(e)) throw e;
+        const pedido = /retry in ([\d.]+)\s*s/i.exec(String(e.detail || e.message || ''));
+        const espera = Math.min(30000, pedido ? Math.ceil(Number(pedido[1]) * 1000) : (n === 1 ? 3000 : 8000)) + Math.round(Math.random() * 800);
+        const motivo = Number(e.status) === 429 ? 'limite temporário' : Number(e.status) === 503 ? 'IA sobrecarregada' : e.tempoEsgotado ? 'demora na resposta' : 'falha temporária';
+        aviso(`${motivo[0].toUpperCase() + motivo.slice(1)}. Nova tentativa em ${Math.round(espera / 1000)} s (${n + 1} de ${tentativas})...`);
+        await esperar(espera, sinal);
+      }
+    }
+    throw ultimo;
+  }
+
+  // V40: reaproveita a estimativa de uma refeição idêntica já lançada (sem chamar a IA).
+  const normalizarRefeicao = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  function buscarEstimativaNoHistorico(texto) {
+    const alvo = normalizarRefeicao(texto);
+    if (alvo.length < 4) return null;
+    const editando = $('#reg-id') ? $('#reg-id').value : '';
+    return [...state.registros]
+      .filter(r => r.id !== editando && (Number(r.calorias) || 0) > 0 && normalizarRefeicao(r.alimentos) === alvo)
+      .sort((a, b) => String(b.data).localeCompare(String(a.data)))[0] || null;
+  }
+  let iaForcarTexto = '';
 
   async function processarIAVision(fileOrText, isPhoto = false) {
     const loader = $('#ia-loading');
@@ -133,7 +196,27 @@
       return;
     }
 
-    loader.textContent = isPhoto ? 'Analisando a foto e estimando porções...' : 'Estimando porções e calculando os macronutrientes...';
+    if (!isPhoto && iaForcarTexto !== normalizarRefeicao(texto)) {
+      const igual = buscarEstimativaNoHistorico(texto);
+      if (igual) {
+        $('#reg-calorias').value = Math.round(Number(igual.calorias) || 0);
+        $('#reg-proteinas').value = Number(igual.proteinas) || 0;
+        $('#reg-carboidratos').value = Number(igual.carboidratos) || 0;
+        $('#reg-gorduras').value = Number(igual.gorduras) || 0;
+        iaForcarTexto = normalizarRefeicao(texto);
+        showToast(`Mesma refeição de ${fmtDataBr(igual.data)}: valores reaproveitados na hora, sem usar a IA. Clique em Texto IA de novo se quiser recalcular pela IA.`);
+        return;
+      }
+    }
+    iaForcarTexto = '';
+    iaCancelamento = new AbortController();
+    const btnCancelar = $('#btn-ia-cancelar');
+    if (btnCancelar) btnCancelar.classList.remove('hidden');
+    const textoBase = isPhoto ? 'Analisando a foto e estimando porções...' : 'Estimando porções e calculando os macronutrientes...';
+    const inicioIA = Date.now();
+    const relogio = setInterval(() => { const seg = Math.round((Date.now() - inicioIA) / 1000); if (!loader.dataset.aviso) loader.textContent = `${textoBase} ${seg} s`; }, 1000);
+    delete loader.dataset.aviso;
+    loader.textContent = textoBase;
     loader.classList.remove('hidden');
     btnFoto.disabled = true;
     btnTexto.disabled = true;
@@ -199,7 +282,7 @@
       };
 
       // A chave Gemini fica no servidor; o navegador envia somente a sessão autenticada e o payload.
-      let resp = await chamarNutriGemini(payload);
+      let resp = await chamarNutriGemini(payload, { signal: iaCancelamento.signal, onStatus: msg => { loader.dataset.aviso = '1'; loader.textContent = msg; setTimeout(() => { delete loader.dataset.aviso; }, 4000); } });
 
       const json = await resp.json();
       const parts = json && json.candidates && json.candidates[0] && json.candidates[0].content
@@ -257,6 +340,7 @@
         ? 'Foto analisada. Confira os alimentos e as porções estimadas antes de salvar.'
         : 'Macros calculados por item. Confira as porções estimadas antes de salvar.');
     } catch (e) {
+      if (e && e.cancelado) { showToast('Análise cancelada. Seus dados continuam no formulário.'); return; }
       console.error('Falha ao analisar refeição com Gemini:', e);
       const status = Number(e && e.status);
       const detalhe = String((e && (e.detail || e.message)) || '').replace(/Gemini\\s+[^:]+:\\s*HTTP\\s+\\d+\\s*[—-]?\\s*/i, '').trim();
@@ -273,13 +357,13 @@
         const quota = /quota|daily|per.day|limit: 0|billing/i.test(detalhe);
         showToast(quota
           ? 'A cota de uso do Gemini foi atingida. Aguarde a renovação da cota ou confira os limites do projeto no Google AI Studio.'
-          : 'O Gemini recebeu muitas solicitações (limite temporário, erro 429). Aguarde 1 minuto e tente novamente.');
+          : 'O Gemini continuou recusando por limite temporário (erro 429) após 3 tentativas. Aguarde 1 minuto e tente novamente.');
       } else if (status === 503) {
-        showToast('O Gemini está com alta demanda no momento (erro 503). Seus dados continuam no formulário. Aguarde 1–2 minutos e tente novamente.');
+        showToast('O Gemini segue sobrecarregado (erro 503) após 3 tentativas. Seus dados continuam no formulário. Tente de novo em 1–2 minutos.');
       } else if (status === 500 || status === 502 || status === 504) {
         showToast(`O serviço do Gemini apresentou uma falha temporária (erro ${status}). Aguarde um pouco e tente novamente.`);
       } else if (status === 408) {
-        showToast('A solicitação ao Gemini demorou demais (erro 408). Confira a conexão e tente novamente.');
+        showToast('A IA não respondeu dentro do limite em 3 tentativas. Tente de novo ou descreva a refeição de forma mais curta.');
       } else if (e && e.name === 'TypeError') {
         showToast('Não foi possível conectar ao Gemini. Verifique a internet, VPN ou bloqueios de rede e tente novamente.');
       } else if (e && e.message && /imagem|foto|formato|identificar|resposta veio vazia|lista de alimentos/i.test(e.message)) {
@@ -290,6 +374,9 @@
         showToast('Não foi possível concluir a análise. Nenhum alimento foi salvo automaticamente. Tente novamente; se persistir, abra o Console (F12) e envie o erro.');
       }
     } finally {
+      clearInterval(relogio);
+      iaCancelamento = null;
+      if (btnCancelar) btnCancelar.classList.add('hidden');
       loader.classList.add('hidden');
       btnFoto.disabled = false;
       btnTexto.disabled = false;
@@ -309,3 +396,7 @@
       e.target.value = '';
     }
   };
+
+  // V40: cancelar a análise em andamento e esquecer o "recalcular" se o texto mudar.
+  if ($('#btn-ia-cancelar')) $('#btn-ia-cancelar').onclick = () => { if (iaCancelamento) iaCancelamento.abort(); };
+  $('#reg-alimentos').addEventListener('input', () => { iaForcarTexto = ''; });

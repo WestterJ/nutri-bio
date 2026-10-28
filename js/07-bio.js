@@ -92,7 +92,7 @@
         contents: [{ role: 'user', parts: [{ inlineData: { mimeType: 'application/pdf', data: dataURL.split(',')[1] } }, { text: 'Extraia todas as avaliações de bioimpedância deste PDF.' }] }],
         generationConfig: { responseMimeType: 'application/json', temperature: 0.1, maxOutputTokens: 1800, responseSchema: { type: 'OBJECT', properties: { observacoes: { type: 'STRING' }, registros: { type: 'ARRAY', items: { type: 'OBJECT', properties: props, required: ['data', 'peso'] } } }, required: ['observacoes', 'registros'] } }
       };
-      const resp = await chamarNutriGemini(payload);
+      const resp = await chamarNutriGemini(payload, { timeoutMs: 90000, onStatus: bioIaStatus });
       const json = await resp.json();
       const txt = json?.candidates?.[0]?.content?.parts?.find(p => typeof p?.text === 'string')?.text;
       if (!txt) throw new Error('A IA não retornou conteúdo.');

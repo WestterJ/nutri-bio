@@ -36,3 +36,6 @@ VERSAO V39 - REORGANIZACAO DO CODIGO (sem mudanca de funcionamento)
 O index.html foi dividido em css/app.css e na pasta js/ (17 arquivos). Consulte ARQUITETURA.md para saber onde fica cada parte.
 Ao publicar, envie a pasta inteira: index.html, css/, js/, icons/, supabase-config.js, service-worker.js e manifest.webmanifest na raiz do site.
 O manifest.webmanifest nao veio neste pacote: mantenha o arquivo que ja esta publicado.
+
+VERSAO V40
+Menu lateral (recolhivel; gaveta no celular), relatorio por periodo, cardio sem tempo visivel nos treinos, IA com novas tentativas automaticas, limite de tempo e botao Cancelar. Publique a pasta inteira (index.html, css/, js/, service-worker.js).

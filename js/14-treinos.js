@@ -19,6 +19,8 @@
       t.kcalMusc = Number(t.kcalMusc) || 0; t.kcalCardio = Number(t.kcalCardio) || 0; t.kcal = t.kcalMusc + t.kcalCardio;
     });
   }
+  // V40: há cardio quando houver tempo OU kcal de cardio (ex.: kcal informada manualmente sem os minutos).
+  const temCardio = t => (Number(t.minCardio) || 0) > 0 || (Number(t.kcalCardio) || 0) > 0;
   function pesoReferencia() {
     const b = [...(state.bio || [])].filter(x => Number(x.peso) > 0).sort((a, c) => String(c.data).localeCompare(String(a.data)))[0];
     return b ? Number(b.peso) : Number(state.metas.peso) || 80;
@@ -74,9 +76,17 @@
     const id = $('#tr-id').value || ('t' + Date.now());
     const reg = { id, data: $('#tr-data').value, ...f, kcalMusc: Math.max(0, Math.round(Number($('#tr-kcal-musc').value) || 0)), kcalCardio: Math.max(0, Math.round(Number($('#tr-kcal-cardio').value) || 0)), manualMusc: trManualM, manualCardio: trManualC, obs: $('#tr-obs').value.trim().slice(0, 200) };
     reg.kcal = reg.kcalMusc + reg.kcalCardio;
-    const i = state.treinos.findIndex(x => x.id === id);
-    if (i >= 0) state.treinos[i] = reg; else state.treinos.push(reg);
-    saveCloud(); renderTreinos(); modalTreino.close(); showToast('Treino salvo!');
+    const gravar = () => {
+      const i = state.treinos.findIndex(x => x.id === id);
+      if (i >= 0) state.treinos[i] = reg; else state.treinos.push(reg);
+      saveCloud(); renderTreinos(); modalTreino.close(); showToast('Treino salvo!');
+    };
+    // V40: kcal de cardio sem minutos deixa o tempo total incompleto — avisa antes de salvar.
+    if (reg.kcalCardio > 0 && !reg.minCardio) {
+      customConfirm('Cardio sem tempo', `Você informou ${fmtNum(reg.kcalCardio)} kcal de ${reg.cardioTipo.toLowerCase()}, mas não os minutos. O tempo total ficará sem o cardio. Salvar assim mesmo?`, gravar, 'Salvar assim', 'bg-amber-500 hover:bg-amber-600 text-slate-900');
+      return;
+    }
+    gravar();
   };
   $('#tbody-treinos').addEventListener('click', e => {
     const b = e.target.closest('button[data-id]'); if (!b) return;
@@ -93,5 +103,5 @@
     const card = (t, v, s) => `<div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm"><div class="text-[11px] text-slate-500 uppercase font-semibold">${t}</div><div class="text-xl font-bold text-slate-800">${v}</div><div class="text-[11px] text-slate-500">${s}</div></div>`;
     $('#treinos-resumo').innerHTML = card('Sessões (7 dias)', r7.n, `${fmtNum(r7.min)} min`) + card('Kcal (7 dias)', fmtNum(r7.kcal), 'estimadas') + card('Sessões (30 dias)', r30.n, `${fmtNum(r30.min)} min`) + card('Kcal por sessão', r30.n ? fmtNum(Math.round(r30.kcal / r30.n)) : '–', 'média de 30 dias');
     const rows = [...state.treinos].sort((a, b) => b.data.localeCompare(a.data));
-    $('#tbody-treinos').innerHTML = rows.length ? rows.map(t => `<tr class="border-b border-slate-100"><td class="p-3 whitespace-nowrap">${esc(fmtDataBr(t.data))}</td><td class="p-3">${esc(t.tipo)}${t.minCardio ? ' + ' + esc(t.cardioTipo) : ''}${t.obs ? `<div class="text-[11px] text-slate-500">${esc(t.obs)}</div>` : ''}</td><td class="p-3 whitespace-nowrap">${fmtNum(t.minMusc + t.minCardio)} min</td><td class="p-3 whitespace-nowrap font-semibold">${(t.manualMusc || t.manualCardio) ? '✎ ' : '~'}${fmtNum(t.kcal)}${t.kcalMusc && t.kcalCardio ? `<div class="text-[11px] font-normal text-slate-500">musc ${fmtNum(t.kcalMusc)} · cardio ${fmtNum(t.kcalCardio)}</div>` : ''}</td><td class="p-3 whitespace-nowrap"><button type="button" class="tr-edit text-sky-700 text-xs font-bold mr-2" data-id="${esc(t.id)}">Editar</button><button type="button" class="tr-del text-red-600 text-xs font-bold" data-id="${esc(t.id)}">Excluir</button></td></tr>`).join('') : '<tr><td colspan="5" class="p-6 text-center text-slate-500 text-sm">Nenhum treino registrado.</td></tr>';
+    $('#tbody-treinos').innerHTML = rows.length ? rows.map(t => `<tr class="border-b border-slate-100"><td class="p-3 whitespace-nowrap">${esc(fmtDataBr(t.data))}</td><td class="p-3">${esc(t.tipo === 'Só cardio' && temCardio(t) ? t.cardioTipo : t.tipo)}${temCardio(t) && t.tipo !== 'Só cardio' ? ' + ' + esc(t.cardioTipo) : ''}${temCardio(t) && !t.minCardio ? ' <span class="text-[11px] text-amber-700 font-semibold">(tempo do cardio não informado)</span>' : ''}${t.obs ? `<div class="text-[11px] text-slate-500">${esc(t.obs)}</div>` : ''}</td><td class="p-3 whitespace-nowrap">${fmtNum(t.minMusc + t.minCardio)} min${t.minMusc && t.minCardio ? `<div class="text-[11px] text-slate-500">musc ${fmtNum(t.minMusc)} · cardio ${fmtNum(t.minCardio)}</div>` : ''}</td><td class="p-3 whitespace-nowrap font-semibold">${(t.manualMusc || t.manualCardio) ? '✎ ' : '~'}${fmtNum(t.kcal)}${t.kcalMusc && t.kcalCardio ? `<div class="text-[11px] font-normal text-slate-500">musc ${fmtNum(t.kcalMusc)} · cardio ${fmtNum(t.kcalCardio)}</div>` : ''}</td><td class="p-3 whitespace-nowrap"><button type="button" class="tr-edit text-sky-700 text-xs font-bold mr-2" data-id="${esc(t.id)}">Editar</button><button type="button" class="tr-del text-red-600 text-xs font-bold" data-id="${esc(t.id)}">Excluir</button></td></tr>`).join('') : '<tr><td colspan="5" class="p-6 text-center text-slate-500 text-sm">Nenhum treino registrado.</td></tr>';
   }

@@ -1,4 +1,4 @@
-# Diário Nutricional — Arquitetura (V39)
+# Diário Nutricional — Arquitetura (V40)
 
 A partir da V39, o código que ficava todo no `index.html` está dividido em arquivos.
 **Não houve mudança de comportamento** em relação à V38: o conteúdo de cada função foi movido sem alteração.
@@ -23,7 +23,7 @@ js/                   Lógica, carregada em ordem numérica (ver abaixo).
 | `02-estado.js` | Estado global e variáveis de sincronização | `state`, `defaultMetas`, `STORAGE_KEY`, `supabase*` (flags), `ordemRefeicao` |
 | `03-nuvem.js` | Indicador de nuvem no topo, gravação local/nuvem, provedores legados (Apps Script, Google Drive, OneDrive), modal de conflito | `updateCloudStatusPill`, `saveCloud`, `resolveSyncConflict`, `loadData` |
 | `04-diario.js` | Aba **Diário**: filtros, KPIs, tabela editável, modal de registro e salvar | `getFilteredRegistros`, `renderKPIs`, `renderTableDiario`, `proximaRefeicao`, `salvarCelulaDiario`, `abrirModalNovo`, `editarRegistro`, `copiarRegistro`, `excluirRegistro` |
-| `05-ia-refeicao.js` | **Texto IA** e **Foto IA** no modal de registro | `GEMINI_MODEL`, `chamarNutriGemini`, `processarIAVision`, `prepararImagemParaIA` |
+| `05-ia-refeicao.js` | **Texto IA** e **Foto IA** no modal de registro; chamada à IA com tempo máximo, novas tentativas e cancelamento; reaproveitamento de refeição idêntica do histórico | `GEMINI_MODEL`, `chamarNutriGemini(payload, {signal, onStatus, timeoutMs, tentativas})`, `buscarEstimativaNoHistorico`, `processarIAVision` |
 | `06-medidas.js` | Aba **Medidas** | `renderMedidas`, `salvarCelulaMedida`, `excluirMedida` |
 | `07-bio.js` | Aba **Bioimpedância** e importação de PDF por IA | `renderBio`, `salvarCelulaBio`, `normalizarLeituraBio`, `renderBioIA` |
 | `08-graficos.js` | Aba **Gráficos** | `renderGraficos` |
@@ -33,7 +33,7 @@ js/                   Lógica, carregada em ordem numérica (ver abaixo).
 | `12-metas.js` | Aba **Metas**: formulário, salvar, sugestão pelo objetivo | `carregarMetasForm` |
 | `13-sync-supabase.js` | **Sincronização Supabase**: leitura, gravação condicional, conflito, polling 45 s, troca de usuário | `syncSupabaseNow`, `scheduleSupabaseSave`, `refreshFromSupabaseIfNeeded`, `conflitoSupabase`, `applySupabaseSession`, `activateUserStorage` |
 | `14-treinos.js` | Aba **Treinos**: kcal por MET, modal, tabela, resumo | `garantirEstadoV34`, `kcalPorBloco`, `abrirTreino`, `renderTreinos` |
-| `15-navegacao.js` | Troca de abas e atualização geral | `tabs`, `refreshAll` |
+| `15-navegacao.js` | **Menu lateral** (recolher, gaveta no celular, botão flutuante), troca de abas e atualização geral | `tabs`, `abrirAba`, `fecharMenuMobile`, `ajustarAlturaCabecalho`, `refreshAll` |
 | `16-auth.js` | **Tela de login**: e-mail/senha, Google, criar conta, recuperar senha | `lockApp`, `unlockApp`, `authClientFromGate`, `authFriendlyError` |
 | `99-main.js` | Inicialização: sessão Supabase, `loadData`, `refreshAll`, `lockApp`, registro do service worker | — |
 
@@ -50,3 +50,11 @@ js/                   Lógica, carregada em ordem numérica (ver abaixo).
 ## Como pedir ajustes (economiza contexto)
 
 Indique o arquivo ou a área: "Em `04-diario.js`, …" ou "Na aba Treinos, …". Envie só os arquivos envolvidos e, se publicar, o `service-worker.js` com o novo `CACHE_NAME`.
+
+## Histórico de versões
+
+| Versão | Mudanças |
+|---|---|
+| V39 | Código dividido em `css/` e `js/` (sem mudança de comportamento). |
+| V39.1 | Contadores "Sem estimativa" e "Menos de 4 refeições" respeitam o período. |
+| V40 | Menu lateral; relatório lista as refeições do período escolhido; sessões por semana com intervalo, média e semana atual; treino com kcal de cardio sem minutos aparece na tabela (e o formulário avisa); IA com até 3 tentativas, limite de tempo, botão Cancelar e reaproveitamento de refeição idêntica. |

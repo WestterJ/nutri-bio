@@ -3,7 +3,8 @@
   
   @media print {
     body { background: white !important; color: black !important; }
-    header, nav, button, .no-print { display: none !important; }
+    header, nav, aside, button, .no-print { display: none !important; }
+    .app-shell { display: block !important; }
     .print-only { display: block !important; }
     
     .overflow-x-auto { overflow: visible !important; }
@@ -19,7 +20,7 @@
 
   .print-only { display: none; }
   /* V22: o conteúdo do aplicativo só aparece depois de autenticar */
-  body.auth-locked > header, body.auth-locked > main { display: none !important; }
+  body.auth-locked > header, body.auth-locked > main, body.auth-locked > .app-shell, body.auth-locked > .sidebar-backdrop { display: none !important; }
   #auth-gate { display: none; }
   body.auth-locked #auth-gate { display: flex; }
   #auth-gate input { color: #172033; }
@@ -32,3 +33,43 @@
   ::-webkit-scrollbar-track { background: #f1f1f1; }
   ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
   ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+  /* V40: menu lateral (mesmo modelo do Planejador de Estudos) */
+  :root { --sb-w: 228px; --sb-w-min: 64px; --sb-bg: #ffffff; --sb-ink: #334155; --sb-active: #0a5cad; }
+  .app-shell { display: flex; flex: 1; min-height: 0; align-items: stretch; }
+  .app-sidebar { position: sticky; top: var(--hdr-h, 64px); align-self: flex-start; height: calc(100vh - var(--hdr-h, 64px));
+    width: var(--sb-w); flex: 0 0 var(--sb-w); background: var(--sb-bg); border-right: 1px solid #e2e8f0;
+    display: flex; flex-direction: column; gap: .35rem; padding: .75rem .6rem; overflow-y: auto; transition: width .2s, flex-basis .2s, transform .2s; z-index: 35; }
+  .sidebar-nav { display: flex; flex-direction: column; gap: .25rem; flex: 1; }
+  .sidebar-spacer { flex: 1; min-height: .75rem; }
+  .sidebar-divider { height: 1px; background: #e2e8f0; margin: .35rem .25rem; }
+  .nav-btn, .sidebar-launch { display: flex; align-items: center; gap: .7rem; width: 100%; padding: .6rem .7rem; border-radius: .7rem;
+    font-size: 13.5px; font-weight: 600; color: var(--sb-ink); background: transparent; text-align: left; white-space: nowrap; transition: background .15s, color .15s; }
+  .nav-btn:hover { background: #f1f5f9; }
+  .nav-btn:focus-visible, .sidebar-launch:focus-visible, .mobile-menu-btn:focus-visible, .fab-novo:focus-visible { outline: 3px solid #ffc20e; outline-offset: 2px; }
+  .nav-btn.active { background: var(--sb-active); color: #fff; box-shadow: 0 1px 3px rgba(10,92,173,.35); }
+  #btn-tab-relatorio.active { background: #ffc20e; color: #0f172a; }
+  .nav-ico { width: 1.6rem; flex: 0 0 1.6rem; text-align: center; font-size: 17px; line-height: 1; }
+  .sidebar-launch { background: #ffc20e; color: #0f172a; font-weight: 700; justify-content: flex-start; }
+  .sidebar-launch:hover { background: #fbbf24; }
+  .sidebar-foot { border-top: 1px solid #e2e8f0; padding-top: .4rem; }
+  .sidebar-collapse-btn { color: #64748b; font-weight: 500; }
+  body.sidebar-collapsed .app-sidebar { width: var(--sb-w-min); flex-basis: var(--sb-w-min); }
+  body.sidebar-collapsed .nav-label { display: none; }
+  body.sidebar-collapsed .nav-btn, body.sidebar-collapsed .sidebar-launch { justify-content: center; padding: .6rem 0; gap: 0; }
+  .mobile-menu-btn { display: none; width: 2.4rem; height: 2.4rem; border-radius: .6rem; background: rgba(255,255,255,.12); color: #fff; font-size: 20px; line-height: 1; }
+  .sidebar-backdrop { display: none; }
+  .fab-novo { display: none; }
+  @media (max-width: 900px) {
+    .mobile-menu-btn { display: inline-flex; align-items: center; justify-content: center; }
+    .app-sidebar { position: fixed; left: 0; top: 0; height: 100vh; width: 260px; flex-basis: auto; transform: translateX(-105%); box-shadow: 4px 0 24px rgba(15,23,42,.25); z-index: 60; padding-top: 1rem; }
+    body.sidebar-collapsed .app-sidebar { width: 260px; }
+    body.sidebar-collapsed .nav-label { display: inline; }
+    body.sidebar-collapsed .nav-btn, body.sidebar-collapsed .sidebar-launch { justify-content: flex-start; padding: .6rem .7rem; gap: .7rem; }
+    body.sidebar-open .app-sidebar { transform: translateX(0); }
+    body.sidebar-open .sidebar-backdrop { display: block; position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 55; }
+    .sidebar-foot { display: none; }
+    .fab-novo { display: flex; align-items: center; justify-content: center; position: fixed; right: 1rem; bottom: 1rem; width: 3.4rem; height: 3.4rem; border-radius: 999px;
+      background: #ffc20e; color: #0f172a; font-size: 28px; font-weight: 700; box-shadow: 0 6px 18px rgba(15,23,42,.3); z-index: 45; }
+  }
+  @media (prefers-reduced-motion: reduce) { .app-sidebar { transition: none; } }

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <!-- Diário Nutricional V39: código dividido em css/ e js/ (ver ARQUITETURA.md). Sem mudança de comportamento em relação à V38. -->
+  <!-- Diário Nutricional V40: menu lateral, relatório por período, cardio sem tempo, IA com novas tentativas. Ver ARQUITETURA.md. -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Diário Nutricional V39.1</title>
+<title>Diário Nutricional V40</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link rel="stylesheet" href="css/app.css">
@@ -17,6 +17,7 @@
   <link rel="apple-touch-icon" href="icons/icon-192.png">
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col auth-locked">
+<script>try{if(localStorage.getItem('nutri_ui_sidebar')==='collapsed')document.body.classList.add('sidebar-collapsed');}catch(e){}</script>
 
 
 <div id="auth-gate" class="fixed inset-0 z-[1000] items-center justify-center p-4 bg-slate-100/95 overflow-y-auto" role="main" aria-labelledby="auth-title">
@@ -46,36 +47,45 @@
   </section>
 </div>
 
-<header class="bg-[#003a70] text-white shadow-md sticky top-0 z-30 no-print border-b-4 border-[#ffc20e]">
-  <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
-    <div class="flex items-center space-x-3">
+<header class="app-header bg-[#003a70] text-white shadow-md sticky top-0 z-40 no-print border-b-4 border-[#ffc20e]">
+  <div class="px-3 sm:px-5 py-2.5 flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3 min-w-0">
+      <button type="button" id="btn-menu-mobile" class="mobile-menu-btn" aria-label="Abrir menu" aria-controls="app-sidebar" aria-expanded="false">☰</button>
       <div class="bg-white text-[#003a70] p-2 rounded-xl font-bold text-xl shadow-inner">🥗</div>
-      <div>
-        <h1 class="text-lg md:text-xl font-bold tracking-tight">Diário Nutricional & Bioimpedância</h1>
-        <small class="text-emerald-100 opacity-90 text-xs">Versão V39.1</small>
+      <div class="min-w-0">
+        <h1 class="text-base md:text-xl font-bold tracking-tight truncate">Diário Nutricional & Bioimpedância</h1>
+        <small class="text-emerald-100 opacity-90 text-xs">Versão V40</small>
       </div>
     </div>
-    
-    <div class="flex items-center flex-wrap gap-2 relative">
-      <button id="btn-cloud-status" class="text-xs px-3 py-1.5 rounded-full bg-amber-600 text-white border border-amber-500 font-medium truncate max-w-[210px] flex items-center gap-1 shadow-sm transition-all hover:bg-amber-500" title="Clique para sincronizar agora com a nuvem">
-        <span id="cloud-status-icon">☁️</span> <span id="cloud-status-text">Nuvem · aguardando sincronização</span>
-      </button>
-
-      <button id="btn-tab-diario" class="bg-[#0a5cad] text-white text-xs md:text-sm font-semibold px-3 py-2 rounded-lg transition shadow-sm">🍽️ Diário</button>
-      <button id="btn-tab-metas-nutri" class="bg-white/10 hover:bg-white/20 text-white text-xs md:text-sm font-semibold px-3 py-2 rounded-lg transition shadow-sm">🎯 Metas</button>
-      <button id="btn-tab-medidas" class="bg-white/10 hover:bg-white/20 text-white text-xs md:text-sm font-semibold px-3 py-2 rounded-lg transition shadow-sm">📏 Medidas</button>
-      <button id="btn-tab-bio" class="bg-white/10 hover:bg-white/20 text-white text-xs md:text-sm font-semibold px-3 py-2 rounded-lg transition shadow-sm">⚡ Bioimpedância</button>
-      <button id="btn-tab-treinos" class="bg-white/10 hover:bg-white/20 text-white text-xs md:text-sm font-semibold px-3 py-2 rounded-lg transition shadow-sm">🏋️ Treinos</button>
-      <button id="btn-tab-graficos" class="bg-white/10 hover:bg-white/20 text-white text-xs md:text-sm font-semibold px-3 py-2 rounded-lg transition shadow-sm">📈 Gráficos</button>
-      <button id="btn-tab-relatorio" class="bg-[#ffc20e] text-slate-900 font-bold text-xs md:text-sm px-3 py-2 rounded-lg transition shadow-sm">📄 Relatório</button>
-      <button id="btn-tab-metas" class="bg-white/10 hover:bg-white/20 text-white text-xs md:text-sm font-semibold px-3 py-2 rounded-lg transition shadow-sm">⚙️ Configurações</button>
-      
-      <input type="file" id="file-input-json" accept=".json" class="hidden">
-    </div>
+    <button id="btn-cloud-status" class="text-xs px-3 py-1.5 rounded-full bg-amber-600 text-white border border-amber-500 font-medium truncate max-w-[210px] flex items-center gap-1 shadow-sm transition-all hover:bg-amber-500" title="Clique para sincronizar agora com a nuvem">
+      <span id="cloud-status-icon">☁️</span> <span id="cloud-status-text">Nuvem · aguardando sincronização</span>
+    </button>
   </div>
+  <input type="file" id="file-input-json" accept=".json" class="hidden">
 </header>
 
-<main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6 relative">
+<div id="sidebar-backdrop" class="sidebar-backdrop no-print"></div>
+<div class="app-shell">
+  <aside id="app-sidebar" class="app-sidebar no-print" aria-label="Menu principal">
+    <button type="button" id="sidebar-novo" class="sidebar-launch" title="Novo lançamento"><span class="nav-ico" aria-hidden="true">➕</span><span class="nav-label">Novo lançamento</span></button>
+    <div class="sidebar-divider" role="presentation"></div>
+    <nav class="sidebar-nav" aria-label="Seções do diário">
+      <button type="button" id="btn-tab-diario" class="nav-btn active" title="Diário"><span class="nav-ico" aria-hidden="true">🍽️</span><span class="nav-label">Diário</span></button>
+      <button type="button" id="btn-tab-metas-nutri" class="nav-btn" title="Metas"><span class="nav-ico" aria-hidden="true">🎯</span><span class="nav-label">Metas</span></button>
+      <button type="button" id="btn-tab-medidas" class="nav-btn" title="Medidas"><span class="nav-ico" aria-hidden="true">📏</span><span class="nav-label">Medidas</span></button>
+      <button type="button" id="btn-tab-bio" class="nav-btn" title="Bioimpedância"><span class="nav-ico" aria-hidden="true">⚡</span><span class="nav-label">Bioimpedância</span></button>
+      <button type="button" id="btn-tab-treinos" class="nav-btn" title="Treinos"><span class="nav-ico" aria-hidden="true">🏋️</span><span class="nav-label">Treinos</span></button>
+      <button type="button" id="btn-tab-graficos" class="nav-btn" title="Gráficos"><span class="nav-ico" aria-hidden="true">📈</span><span class="nav-label">Gráficos</span></button>
+      <button type="button" id="btn-tab-relatorio" class="nav-btn" title="Relatório"><span class="nav-ico" aria-hidden="true">📄</span><span class="nav-label">Relatório</span></button>
+      <span class="sidebar-spacer"></span>
+      <button type="button" id="btn-tab-metas" class="nav-btn" title="Configurações"><span class="nav-ico" aria-hidden="true">⚙️</span><span class="nav-label">Configurações</span></button>
+    </nav>
+    <div class="sidebar-foot">
+      <button type="button" id="sidebar-toggle" class="nav-btn sidebar-collapse-btn" aria-expanded="true" aria-controls="app-sidebar" title="Recolher menu"><span class="nav-ico" aria-hidden="true">«</span><span class="nav-label">Recolher menu</span></button>
+    </div>
+  </aside>
+  <button type="button" id="fab-novo" class="fab-novo no-print" aria-label="Novo lançamento" title="Novo lançamento">＋</button>
+<main class="flex-1 min-w-0 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6 relative">
   
   <!-- MODULO: DIÁRIO ALIMENTAR -->
   <div id="view-diario" class="space-y-6">
@@ -367,7 +377,8 @@
         <div id="rel-atividade" class="space-y-4"></div>
       </div>
       <div>
-        <h3 class="font-bold text-sm text-slate-700 border-b pb-1 mb-3">Últimas Refeições Registradas</h3>
+        <h3 id="rel-titulo-refeicoes" class="font-bold text-sm text-slate-700 border-b pb-1 mb-1">Refeições do Período</h3>
+        <p id="rel-nota-refeicoes" class="text-[11px] text-slate-500 mb-2"></p>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs border-collapse" id="rel-tabela-refeicoes-table">
             <thead class="bg-slate-100">
@@ -451,6 +462,7 @@
     </div>
   </div>
 </main>
+</div>
 
 <!-- Custom Confirmation Modal -->
 <dialog id="modal-confirm" class="rounded-2xl p-0 w-full max-w-sm shadow-2xl backdrop:bg-slate-900/50">
@@ -544,7 +556,7 @@
         </div>
       </div>
       <textarea id="reg-alimentos" rows="3" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0a5cad] focus:outline-none text-sm" placeholder="Ex: Arroz, feijão, frango e salada... ou use a Foto IA!"></textarea>
-      <div id="ia-loading" class="text-xs text-purple-600 mt-1 hidden italic font-medium" role="status" aria-live="polite">Analisando com IA...</div>
+      <div class="flex items-center gap-2 mt-1"><div id="ia-loading" class="text-xs text-purple-600 hidden italic font-medium" role="status" aria-live="polite">Analisando com IA...</div><button type="button" id="btn-ia-cancelar" class="hidden text-xs font-bold text-red-600 border border-red-200 rounded-md px-2 py-0.5 hover:bg-red-50">Cancelar</button></div>
       <p class="text-[11px] text-slate-500 mt-1">A IA estima os alimentos e as porções; confira antes de salvar. As calorias são calculadas a partir dos macros pela fórmula 4 kcal/g de proteína, 4 kcal/g de carboidrato e 9 kcal/g de gordura. Foto não permite medir o peso exato nem identificar com certeza ingredientes ocultos.</p>
     </div>
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">

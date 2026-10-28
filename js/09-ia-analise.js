@@ -50,7 +50,7 @@
     if (!dados.dias_com_calorias) { showToast('Não há refeições com calorias estimadas neste período.'); return; }
     const btn = $('#btn-ia-analise'); btn.disabled = true; iaStatus('Analisando o período com IA... pode levar até 1–2 minutos.');
     try {
-      const resp = await chamarNutriGemini({ modo: 'relatorio', systemInstruction: { parts: [{ text: IA_ANALISE_PROMPT }] }, contents: [{ role: 'user', parts: [{ text: 'Dados do diário (JSON):\n' + JSON.stringify(dados) }] }], generationConfig: { responseMimeType: 'application/json', responseSchema: IA_ANALISE_SCHEMA } });
+      const resp = await chamarNutriGemini({ modo: 'relatorio', systemInstruction: { parts: [{ text: IA_ANALISE_PROMPT }] }, contents: [{ role: 'user', parts: [{ text: 'Dados do diário (JSON):\n' + JSON.stringify(dados) }] }], generationConfig: { responseMimeType: 'application/json', responseSchema: IA_ANALISE_SCHEMA } }, { onStatus: iaStatus });
       const json = await resp.json();
       const txt = json?.candidates?.[0]?.content?.parts?.find(p => typeof p?.text === 'string')?.text;
       if (!txt) throw new Error('A IA não retornou conteúdo.');
