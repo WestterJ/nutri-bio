@@ -4,7 +4,7 @@
   <!-- Diário Nutricional V40: menu lateral, relatório por período, cardio sem tempo, IA com novas tentativas. Ver ARQUITETURA.md. -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Diário Nutricional V40</title>
+<title>Diário Nutricional V41</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link rel="stylesheet" href="css/app.css">
@@ -54,7 +54,7 @@
       <div class="bg-white text-[#003a70] p-2 rounded-xl font-bold text-xl shadow-inner">🥗</div>
       <div class="min-w-0">
         <h1 class="text-base md:text-xl font-bold tracking-tight truncate">Diário Nutricional & Bioimpedância</h1>
-        <small class="text-emerald-100 opacity-90 text-xs">Versão V40</small>
+        <small class="text-emerald-100 opacity-90 text-xs">Versão V41</small>
       </div>
     </div>
     <button id="btn-cloud-status" class="text-xs px-3 py-1.5 rounded-full bg-amber-600 text-white border border-amber-500 font-medium truncate max-w-[210px] flex items-center gap-1 shadow-sm transition-all hover:bg-amber-500" title="Clique para sincronizar agora com a nuvem">
@@ -277,12 +277,38 @@
   <div id="view-treinos" class="hidden space-y-6">
     <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-wrap justify-between items-center gap-4">
       <div><h2 class="text-lg font-bold text-slate-800">Treinos e Atividade Física</h2>
-      <p class="text-xs text-slate-500">Calorias estimadas por MET × peso × tempo, sem contar o repouso. Edite se tiver uma leitura externa.</p></div>
+      <p class="text-xs text-slate-500">Calorias estimadas por MET × peso × tempo, sem contar o repouso. Clique em qualquer célula da tabela para editar (Enter confirma). Kcal editada à mão fica marcada com ✎.</p></div>
       <button id="btn-novo-treino" class="bg-[#003a70] hover:bg-[#0a5cad] text-white text-xs md:text-sm font-semibold px-4 py-2 rounded-lg transition shadow">➕ Novo Treino</button>
     </div>
     <div id="treinos-resumo" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+    <section class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-xs font-bold text-slate-600 uppercase">Filtros:</span>
+        <select id="tr-filtro-periodo" class="text-xs px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 focus:ring-2 focus:ring-[#0a5cad]">
+          <option value="todos" selected>Todo o período</option>
+          <option value="hoje">Hoje</option>
+          <option value="7">Últimos 7 dias</option>
+          <option value="30">Últimos 30 dias</option>
+          <option value="mes">Mês atual</option>
+          <option value="ano">Ano atual</option>
+          <option value="personalizado">Período personalizado</option>
+        </select>
+        <div id="tr-box-datas" class="hidden flex items-center gap-2">
+          <input type="date" id="tr-filtro-data-inicio" class="text-xs px-2 py-1.5 border border-slate-300 rounded-lg">
+          <span class="text-xs text-slate-500">até</span>
+          <input type="date" id="tr-filtro-data-fim" class="text-xs px-2 py-1.5 border border-slate-300 rounded-lg">
+        </div>
+        <select id="tr-filtro-tipo" class="text-xs px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 focus:ring-2 focus:ring-[#0a5cad]">
+          <option value="todos" selected>Todos os treinos</option>
+          <option>Musculação A</option><option>Musculação B</option><option>Musculação C</option><option>Musculação D</option><option>Musculação (geral)</option><option>Só cardio</option>
+          <option value="__cardio">Com cardio</option>
+        </select>
+        <button type="button" id="tr-filtro-limpar" class="text-xs px-3 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50">Limpar</button>
+      </div>
+      <span id="tr-contador" class="text-xs text-slate-500 font-medium"></span>
+    </section>
     <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden"><div class="overflow-x-auto">
-      <table class="w-full text-left border-collapse text-sm min-w-[520px]"><thead class="bg-[#003a70] text-white uppercase text-xs"><tr><th class="p-3">Data</th><th class="p-3">Treino</th><th class="p-3">Tempo</th><th class="p-3">Kcal</th><th class="p-3"></th></tr></thead><tbody id="tbody-treinos"></tbody></table>
+      <table class="w-full text-left border-collapse text-sm min-w-[1040px]"><thead class="bg-[#003a70] text-white uppercase text-xs"><tr><th class="p-3">Data</th><th class="p-3">Treino</th><th class="p-3">Intensidade</th><th class="p-3 text-center">Min musc.</th><th class="p-3">Cardio</th><th class="p-3 text-center">Min cardio</th><th class="p-3 text-center">Kcal musc.</th><th class="p-3 text-center">Kcal cardio</th><th class="p-3 text-center">Kcal total</th><th class="p-3">Obs.</th><th class="p-3"></th></tr></thead><tbody id="tbody-treinos"></tbody></table>
     </div></div>
   </div>
 
