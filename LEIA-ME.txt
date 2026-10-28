@@ -1,0 +1,38 @@
+DIÁRIO NUTRICIONAL V22 — PWA COM LOGIN
+
+Base: Diário Nutricional V21 PWA. Mantém Gemini 3.8 Flash, funções nutricionais, gráficos, medidas, bioimpedância, mensagens de erro, e sincronização Supabase. Acrescenta tela de entrada com Supabase Auth, sessão persistente, criação de conta e recuperação/alteração de senha.
+
+PUBLICAÇÃO / ATUALIZAÇÃO NO NETLIFY
+1. Guarde uma cópia do site atual e exporte um backup JSON dos dados antes de atualizar.
+2. Extraia este ZIP. Envie a pasta extraída ao Netlify Drop ou publique os arquivos no mesmo site Netlify já criado.
+3. Confirme que index.html, manifest.webmanifest, service-worker.js e icons/ ficam na raiz do site.
+4. O service worker usa um novo nome de cache para evitar servir a versão antiga.
+5. Abra o endereço HTTPS do site. Na primeira entrada, informe URL do projeto Supabase e a chave pública publishable/anon. Não use service_role.
+6. Entre com a conta já existente. O aplicativo só mostra o conteúdo após autenticação. A sessão é persistente neste dispositivo.
+
+RECUPERAÇÃO DE SENHA
+No Supabase Dashboard, Authentication > URL Configuration, adicione o endereço do site Netlify como Site URL e em Redirect URLs, incluindo a origem do site (por exemplo https://seu-site.netlify.app/**). Use o endereço real do seu site, não o exemplo. Depois, na tela de login, digite o e-mail e clique em “Esqueci a senha”. O link do e-mail retorna ao aplicativo para definir a nova senha. O modelo de e-mail de recuperação do Supabase também deve estar habilitado.
+
+RLS / DADOS
+- A tabela esperada é public.diary_data, com user_id uuid ligado a auth.users e RLS habilitado.
+- O SQL VERIFICAR_RLS_SUPABASE.sql apenas consulta a configuração atual; não altera nada. Confira o resultado: RLS deve estar habilitado e as policies devem restringir leitura/escrita à própria conta (auth.uid() = user_id).
+- Se as políticas estiverem ausentes/incorretas, use o arquivo Supabase_Diario_Nutricional_setup.sql original no SQL Editor somente depois de conferir a estrutura existente.
+- A tela de login protege a interface; a segurança dos dados depende também das políticas RLS. O HTML público pode ser inspecionado, então use somente chave pública no navegador.
+- Os dados locais são separados por usuário autenticado para evitar reutilização automática entre contas. Ao encontrar dados remotos, o app carrega a nuvem quando não existe cópia local associada àquela conta. Se houver cópia local da mesma conta, poderá pedir confirmação de sincronização.
+
+OBSERVAÇÕES
+- A recuperação de senha exige internet e URL de retorno permitida no Supabase.
+- O login não resolve indisponibilidade/limites da API Gemini; mantém o tratamento de erros da V21.
+- Teste após publicar: login, sair/entrar, recuperação de senha, registrar refeição, Texto IA, Foto IA, medidas, bioimpedância e sincronização.
+
+
+VERSÃO V23: botão “Continuar com Google” integrado ao Supabase Auth via signInWithOAuth. O provedor Google deve estar habilitado no Supabase; a URL de retorno usada é a URL atual do GitHub Pages. Não coloque Client Secret no HTML.
+
+
+VERSAO V24 - ALTERACAO
+Ao clicar em Texto IA, o campo 'Alimentos / Descrição da Refeição' permanece exatamente como foi digitado. A IA preenche os campos nutricionais e observações. A Foto IA continua podendo preencher a descrição com os alimentos reconhecidos.
+
+VERSAO V39 - REORGANIZACAO DO CODIGO (sem mudanca de funcionamento)
+O index.html foi dividido em css/app.css e na pasta js/ (17 arquivos). Consulte ARQUITETURA.md para saber onde fica cada parte.
+Ao publicar, envie a pasta inteira: index.html, css/, js/, icons/, supabase-config.js, service-worker.js e manifest.webmanifest na raiz do site.
+O manifest.webmanifest nao veio neste pacote: mantenha o arquivo que ja esta publicado.
