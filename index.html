@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planejador de Estudos | Concursos — V10.7</title>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            850: '#1e293b',
+                            900: '#0f172a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="./supabase-config.js"></script>
+    <script src="./js/00-config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./css/estilos.css">
+
+    <meta name="theme-color" content="#003a70">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Planejador">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="apple-touch-icon" href="./icons/icon-192.png">
+</head>
+<body class="h-full bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col auth-locked">
+<script>try{if(localStorage.getItem('tce_ui_sidebar')==='collapsed')document.body.classList.add('sidebar-collapsed');}catch(e){}</script>
+<div id="auth-gate" class="fixed inset-0 z-[1000] items-center justify-center p-4 bg-slate-100/95 dark:bg-slate-950/95 overflow-y-auto" role="main" aria-labelledby="auth-title">
+  <section class="auth-card w-full max-w-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden my-auto p-0">
+    <div class="bg-[#003a70] text-white px-6 py-5 border-b-4 border-[#ffc20e]">
+      <div class="text-3xl mb-2" aria-hidden="true">📚</div>
+      <h1 id="auth-title" class="text-xl sm:text-2xl font-bold">Planejador de Estudos <span data-app-version class="ml-1.5 align-middle text-[11px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"></span></h1>
+      <p class="text-sm text-blue-100 mt-1">Entre com segurança para acessar seu cronograma, edital e histórico.</p>
+    </div>
+    <div class="p-5 sm:p-6 space-y-4">
+      <div id="auth-normal-fields" class="space-y-3">
+        <input id="auth-supabase-url" type="hidden"><input id="auth-supabase-key" type="hidden">
+        <div><label><span class="auth-label">E-mail</span><input id="auth-email" class="auth-field" type="email" autocomplete="username" placeholder="voce@exemplo.com"></label></div>
+        <div><label><span class="auth-label">Senha</span><input id="auth-password" class="auth-field" type="password" autocomplete="current-password" placeholder="Sua senha"></label></div>
+        <button id="auth-login" type="button" class="auth-btn w-full bg-[#0a5cad] hover:bg-blue-800 text-white">Entrar com e-mail</button>
+        <button id="auth-google" type="button" class="auth-btn w-full border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 flex items-center justify-center gap-2"><span aria-hidden="true" class="font-bold text-lg">G</span> Continuar com Google</button>
+        <div class="grid grid-cols-2 gap-2"><button id="auth-signup" type="button" class="auth-btn border border-emerald-600 text-emerald-800 hover:bg-emerald-50">Criar conta</button><button id="auth-forgot" type="button" class="auth-btn border border-slate-300 text-slate-700 hover:bg-slate-50">Esqueci a senha</button></div>
+      </div>
+      <div id="auth-recovery-fields" class="hidden space-y-3">
+        <h2 class="font-bold text-slate-800 dark:text-slate-100">Definir nova senha</h2>
+        <p class="text-sm text-slate-600 dark:text-slate-300">Digite a nova senha para sua conta.</p>
+        <label><span class="auth-label">Nova senha</span><input id="auth-new-password" class="auth-field" type="password" autocomplete="new-password" minlength="8" placeholder="Use pelo menos 8 caracteres"></label>
+        <button id="auth-update-password" type="button" class="auth-btn w-full bg-[#0a5cad] text-white">Salvar nova senha</button>
+        <button id="auth-back-login" type="button" class="auth-btn w-full border border-slate-300 text-slate-700">Voltar ao login</button>
+      </div>
+      <p id="auth-message" class="auth-message" role="status" aria-live="polite">A sessão pode permanecer ativa neste dispositivo. O conteúdo do app só aparece após autenticação.</p>
+      <button id="pwa-install" type="button" hidden class="auth-btn w-full bg-[#ffc20e] text-slate-900">＋ Instalar Planejador no dispositivo</button>
+      <p class="text-[11px] leading-relaxed text-slate-500">Google OAuth exige o provedor Google habilitado no Supabase e o endereço deste aplicativo incluído em Authentication → URL Configuration → Redirect URLs. Se preferir, o login tradicional por e-mail e senha continua disponível.</p>
+    </div>
+  </section>
+</div>
+
+<header class="bg-white dark:bg-slate-800 shadow-sm border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50">
+        <div class="w-full px-3 sm:px-6 min-h-[64px] py-2 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+                <button id="mobile-menu-btn" type="button" onclick="openSidebarMobile()" aria-label="Abrir menu" aria-controls="app-sidebar" class="mobile-menu-btn"><i class="fa-solid fa-bars"></i></button>
+                <div class="bg-white text-blue-800 p-2.5 rounded-xl shadow-md flex items-center justify-center">
+                    <i class="fa-solid fa-book-open-reader text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base sm:text-lg leading-tight">Planejador de Estudos <span data-app-version class="ml-1.5 align-middle text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-white/15 text-white border border-white/25"></span></h1>
+                    <p id="contest-subtitle" class="text-[10px] sm:text-xs text-blue-100">Selecione um concurso para começar</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button id="header-cloud-status" onclick="switchTab('configuracoes')" class="cloud-indicator local" title="Estado do armazenamento. Clique para abrir as configurações">
+                    <i class="fa-solid fa-hard-drive"></i><span id="header-cloud-status-text">Local • Neste navegador</span>
+                </button>
+            </div>
+        </div>
+    </header>
+    <div id="sidebar-backdrop" class="sidebar-backdrop" onclick="closeSidebarMobile()"></div>
+    <div class="app-shell">
+        <aside id="app-sidebar" class="app-sidebar" aria-label="Menu principal">
+          <div class="sidebar-contest">
+            <label for="contest-selector" class="sidebar-label nav-label">Concurso</label>
+            <select id="contest-selector" onchange="changeContest(this.value)" class="sidebar-select" aria-label="Concurso"></select>
+            <button type="button" id="sidebar-contest-icon" class="sidebar-icon-btn" onclick="toggleSidebar()" title="Concurso ativo. Expanda o menu para trocar" aria-label="Expandir o menu para trocar de concurso"><i class="fa-solid fa-flag-checkered"></i></button>
+          </div>
+          <button type="button" id="sidebar-launch" class="app-primary sidebar-launch" onclick="launchStudyFromSidebar()" title="Lançar estudo"><i class="fa-solid fa-plus"></i><span class="nav-label">Lançar estudo</span></button>
+          <div class="sidebar-divider" role="presentation"></div>
+          <nav class="sidebar-nav" aria-label="Seções do planejador">
+            <button type="button" onclick="switchTab('cronograma',true)" id="tab-cronograma" class="tab-btn active-tab bg-blue-600 text-white shadow-sm" title="Cronograma & Prioridades" aria-current="page"><i class="fa-solid fa-list-check"></i><span class="nav-label">Cronograma & Prioridades</span></button>
+            <button type="button" onclick="switchTab('registro',true)" id="tab-registro" class="tab-btn bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700" title="Registro de Estudos"><i class="fa-solid fa-clock-rotate-left"></i><span class="nav-label">Registro de Estudos</span></button>
+            <button type="button" onclick="switchTab('edital',true)" id="tab-edital" class="tab-btn bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700" title="Edital Verticalizado"><i class="fa-solid fa-book-open"></i><span class="nav-label">Edital Verticalizado</span></button>
+            <button type="button" onclick="switchTab('dashboard',true)" id="tab-dashboard" class="tab-btn bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700" title="Datas Importantes"><i class="fa-solid fa-calendar-check"></i><span class="nav-label">Datas Importantes</span></button>
+            <button type="button" onclick="switchTab('personalizacao',true)" id="tab-personalizacao" class="tab-btn bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700" title="Personalização"><i class="fa-solid fa-sliders"></i><span class="nav-label">Personalização</span></button>
+            <span class="sidebar-spacer"></span>
+            <button type="button" onclick="switchTab('configuracoes',true)" id="tab-configuracoes" class="tab-btn bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700" title="Configurações"><i class="fa-solid fa-gear"></i><span class="nav-label">Configurações</span></button>
+          </nav>
+          <div class="sidebar-foot">
+            <button type="button" id="sidebar-theme" class="sidebar-foot-btn" onclick="toggleDarkMode()" title="Alternar tema claro/escuro"><i id="theme-icon" class="fa-solid fa-moon"></i><span class="nav-label">Alternar tema</span></button>
+            <button type="button" id="sidebar-toggle" class="sidebar-foot-btn sidebar-collapse-btn" onclick="toggleSidebar()" aria-expanded="true" aria-controls="app-sidebar" title="Recolher menu"><i class="fa-solid fa-angles-left"></i><span class="nav-label">Recolher menu</span></button>
+          </div>
+          <span id="countdown-badge" hidden data-exam-date=""><span id="countdown-text"></span></span>
+        </aside>
+        <button type="button" id="fab-launch" class="fab-launch app-primary" onclick="launchStudyFromSidebar()" aria-label="Lançar estudo" title="Lançar estudo"><i class="fa-solid fa-plus"></i></button>
+<main class="flex-1 min-w-0 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col">
+        <!-- ABA 1: CRONOGRAMA & PRIORIDADES -->
+        <div id="content-cronograma" class="tab-content flex-1 flex flex-col space-y-4 sm:space-y-6">
+            
+            <!-- Indicadores gerais de progresso -->
+            <div class="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
+                <div class="bg-white dark:bg-slate-800 p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                    <p class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Disciplinas Estudadas</p>
+                    <div class="flex items-end justify-between mt-1.5">
+                        <h3 id="stat-disciplines-count" class="text-lg sm:text-xl font-bold text-indigo-600 dark:text-indigo-400">0/0</h3>
+                        <span id="stat-disc-percent" class="text-[10px] text-slate-500 font-bold">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full mt-2.5 overflow-hidden">
+                        <div id="stat-disc-bar" class="bg-indigo-600 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                    <p class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Tópicos Estudados</p>
+                    <div class="flex items-end justify-between mt-1.5">
+                        <h3 id="stat-topics-count" class="text-lg sm:text-xl font-bold text-blue-600 dark:text-blue-400">0/0</h3>
+                        <span id="stat-percent" class="text-[10px] text-slate-500 font-bold">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full mt-2.5 overflow-hidden">
+                        <div id="stat-bar" class="bg-blue-600 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                    <p class="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">Horas de Estudo</p>
+                    <div class="flex items-end justify-between mt-1.5">
+                        <h3 id="stat-total-hours" class="text-lg sm:text-xl font-bold">0.0h</h3>
+                        <span id="stat-total-hours-dhm" class="text-[10px] text-slate-500">Acumulado</span>
+                    </div>
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full mt-2.5 overflow-hidden">
+                        <div id="stat-hours-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                    <p class="text-[10px] font-semibold text-amber-600 dark:text-amber-400">Questões Resolvidas</p>
+                    <div class="flex items-end justify-between mt-1.5">
+                        <h3 id="stat-total-questions" class="text-lg sm:text-xl font-bold">0</h3>
+                        <span class="text-[10px] text-slate-500">Questões</span>
+                    </div>
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full mt-2.5 overflow-hidden">
+                        <div id="stat-questions-bar" class="bg-amber-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 col-span-2">
+                    <p class="text-[10px] font-semibold text-purple-600 dark:text-purple-400">Ciclos de Revisão</p>
+                    <div class="flex items-end justify-between mt-1.5">
+                        <h3 id="stat-total-reviews" class="text-lg sm:text-xl font-bold">0</h3>
+                        <span class="text-[10px] text-slate-500">Revisões realizadas</span>
+                    </div>
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full mt-2.5 overflow-hidden">
+                        <div id="stat-reviews-bar" class="bg-purple-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
+              <div class="space-y-4 min-w-0">
+              <section class="activity-panel recent-panel bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+                <div class="activity-panel-head flex items-center justify-between gap-2"><div><h3 class="font-bold text-sm text-blue-700 dark:text-blue-300"><i class="fa-solid fa-clock-rotate-left mr-2"></i>Últimos estudos</h3><p class="text-[11px] text-slate-500 mt-1">Sua rotação recente, com data, duração e questões.</p></div><span class="activity-count">Recentes</span></div>
+                <div id="recent-rotation-container" class="space-y-2"><!-- Inserido dinamicamente --></div>
+              </section>
+              <section class="activity-panel bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+                <div class="activity-panel-head flex items-center justify-between gap-2"><div><h3 class="font-bold text-sm text-purple-700 dark:text-purple-300"><i class="fa-solid fa-rotate mr-2"></i>Últimas revisões</h3><p class="text-[11px] text-slate-500 mt-1">Revisões ficam separadas da rotação de estudos.</p></div><span id="recent-review-count" class="activity-count">0 registros</span></div>
+                <div id="recent-reviews-container" class="space-y-2"></div>
+              </section>
+              </div>
+              <div class="space-y-4 min-w-0">
+              <section class="activity-panel suggestions-panel bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+                <div class="activity-panel-head flex items-center justify-between gap-2"><div><h3 class="font-bold text-sm text-emerald-700 dark:text-emerald-300"><i class="fa-solid fa-compass mr-2"></i>Sugestões para os próximos estudos</h3><p class="text-[11px] text-slate-500 mt-1">Ordem calculada pela estratégia configurada.</p></div><span id="suggestion-mode-badge" class="activity-count suggestions-count">Prioridade + progresso</span></div>
+                <div id="next-study-container" class="space-y-2"><!-- Inserido dinamicamente --></div>
+              </section>
+              <section class="activity-panel bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+                <div class="activity-panel-head flex items-center justify-between gap-2"><div><h3 class="font-bold text-sm text-violet-700 dark:text-violet-300"><i class="fa-solid fa-calendar-check mr-2"></i>Revisões sugeridas</h3><p class="text-[11px] text-slate-500 mt-1">Conteúdos estudados que podem entrar no ciclo de revisão.</p></div><span id="review-due-count" class="activity-count">0 pendentes</span></div>
+                <div id="review-due-container" class="space-y-2"></div>
+                <p class="text-[10px] text-slate-400">Cadência inicial sugerida: 1, 7, 15 e 30 dias após o estudo/revisão. Você poderá ajustar essa regra em uma versão futura.</p>
+              </section>
+              </div>
+            </div>
+
+            <section class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+              <div class="flex items-start justify-between flex-wrap gap-2">
+                <div><h3 class="font-bold text-sm sm:text-base text-blue-700 dark:text-blue-300"><i class="fa-solid fa-chart-simple mr-2"></i>Progresso por prioridade e disciplina</h3><p class="text-xs text-slate-500 mt-1">Abra cada prioridade e disciplina para acompanhar tópicos, subtópicos, horas, questões e ciclos de revisão.</p></div>
+                <span id="home-progress-summary" class="text-xs font-bold rounded-full bg-blue-50 text-blue-700 px-3 py-1">0% concluído</span>
+              </div>
+              <div id="priority-progress-container" class="space-y-3"></div>
+            </section>
+
+
+
+        </div>
+
+        <!-- ABA 2: REGISTRO DE ESTUDOS -->
+        <div id="content-registro" class="tab-content hidden flex-1 flex flex-col space-y-4">
+            <div class="flex flex-col gap-4">
+                <div class="bg-white dark:bg-slate-800 p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-4">
+                    <h3 class="font-bold text-sm sm:text-base flex items-center space-x-2 text-blue-600 dark:text-blue-400">
+                        <i class="fa-solid fa-plus-circle"></i>
+                        <span>Registrar Sessão de Estudo</span>
+                    </h3>
+                    
+                    <div id="next-study-recommendation" class="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-100 bg-emerald-50/70 px-3 py-2 text-xs dark:border-emerald-900 dark:bg-emerald-950/20">
+                      <div><span class="font-semibold text-emerald-800 dark:text-emerald-300"><i class="fa-solid fa-compass mr-1"></i>Próxima recomendação:</span> <span id="next-study-recommendation-text" class="text-slate-700 dark:text-slate-200">calculando...</span></div>
+                      <button id="use-study-recommendation" type="button" onclick="applyStudyRecommendation()" class="rounded-lg bg-emerald-700 px-3 py-1.5 font-bold text-white hover:bg-emerald-800">Usar disciplina</button>
+                    </div>
+                    <form id="study-session-form" onsubmit="handleStudySessionSubmit(event)" class="session-entry-form grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 items-end text-xs">
+                        <div class="grid grid-cols-2 gap-3 sm:col-span-2">
+                            <div>
+                                <label class="block font-semibold text-slate-500 dark:text-slate-400 mb-1">Tipo 1 · Grupo:</label>
+                                <select id="reg-type1" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-medium outline-none">
+                                    <option value="Conhecimentos Específicos">Conhecimentos Específicos</option>
+                                    <option value="Conhecimentos Gerais">Conhecimentos Gerais</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-500 dark:text-slate-400 mb-1">Tipo 2 · Atividade:</label>
+                                <select id="reg-type2" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-medium outline-none">
+                                    <option value="Estudo Teórico">📖 Estudo Teórico</option>
+                                    <option value="Resolução de Questões">📝 Resolução de Questões</option>
+                                    <option value="Revisão">🔄 Revisão</option>
+                                    <option value="Simulado">🎯 Simulado</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-500 dark:text-slate-400 mb-1">Data do estudo:</label>
+                            <input type="date" id="reg-date" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-medium outline-none">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-500 dark:text-slate-400 mb-1">Curso / trilha:</label>
+                            <select id="reg-track" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-medium outline-none"></select>
+                            
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-500 dark:text-slate-400 mb-1">Disciplina:</label>
+                            <select id="reg-discipline" onchange="updateRegTopics()" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-medium outline-none"></select>
+                        </div>
+                        <div class="xl:col-span-2">
+                            <label class="block font-semibold text-slate-500 dark:text-slate-400 mb-1">Tópico & subtópico:</label>
+                            <select id="reg-topic" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-medium outline-none"></select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block font-semibold text-slate-500 dark:text-slate-400 mb-1">Minutos:</label>
+                                <input type="number" id="reg-minutes" min="1" value="50" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-medium outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-500 dark:text-slate-400 mb-1">Questões:</label>
+                                <input type="number" id="reg-questions" min="0" value="0" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-medium outline-none">
+                            </div>
+                        </div>
+                        <div class="xl:col-span-4 flex flex-wrap items-center justify-between gap-2">
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400">Para registrar uma revisão, selecione <strong>Revisão</strong> em Tipo 2. Assim não é preciso marcar um segundo campo.</p>
+                            <button type="submit" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow transition inline-flex items-center justify-center gap-2"><i class="fa-solid fa-check"></i><span>Salvar registro de estudo</span></button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col space-y-4">
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                        <h3 class="font-bold text-sm sm:text-base flex items-center space-x-2">
+                            <i class="fa-solid fa-history text-emerald-500"></i>
+                            <span>Histórico de Sessões Registradas</span>
+                        </h3>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <select id="hist-filter-type" onchange="renderSessionsList()" class="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs font-medium outline-none">
+                                <option value="all">Filtrar por Tipo</option>
+                                <option value="Estudo Teórico">Estudo Teórico</option>
+                                <option value="Resolução de Questões">Resolução de Questões</option>
+                                <option value="Revisão">Revisão</option>
+                                <option value="Simulado">Simulado</option>
+                            </select>
+                            <select id="hist-filter-disc" onchange="renderSessionsList()" class="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs font-medium outline-none">
+                                <option value="all">Todas Disciplinas</option>
+                            </select>
+                            <select id="hist-filter-track" onchange="renderSessionsList()" class="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs font-medium outline-none" aria-label="Filtrar por curso ou trilha">
+                                <option value="all">Todas as trilhas</option>
+                            </select>
+                            <span id="session-count-badge" class="text-xs bg-slate-100 dark:bg-slate-700 px-2.5 py-1 rounded-full font-medium whitespace-nowrap">0 reg</span>
+                        </div>
+                    </div>
+
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400">Dica: edite direto na tabela (a alteração é salva ao sair do campo). Use <strong>Copiar</strong> para reaproveitar um registro. Linhas em destaque apontam para tópicos que não fazem parte do seu edital atual.</p>
+                    <div class="overflow-auto max-h-[70vh] flex-1 rounded-xl border border-slate-200 dark:border-slate-700" id="sessions-list">
+                        <!-- Histórico inserido por JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 3: EDITAL VERTICALIZADO -->
+        <div id="content-edital" class="tab-content hidden flex-1 flex flex-col space-y-6">
+            <div class="bg-white dark:bg-slate-800 p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-base sm:text-lg font-bold text-blue-600 dark:text-blue-400">Edital Verticalizado</h3>
+                        <p id="edital-contest-caption" class="text-xs text-slate-500 dark:text-slate-400">Conteúdo programático do concurso selecionado, dividido por tópico e subtópico.</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <select id="edital-filter-disc" onchange="renderEditalVerticalizado()" class="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium outline-none">
+                            <option value="all">Todas as Disciplinas</option>
+                        </select>
+                        <select id="edital-filter-topic" onchange="renderEditalVerticalizado()" class="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium outline-none">
+                            <option value="all">Todos os Tópicos</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="app-card p-4 sm:p-5 mt-5 space-y-4" id="syllabus-manager-panel">
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h4 class="font-bold text-sm sm:text-base section-heading"><i class="fa-solid fa-list-check mr-2"></i>Cadastro manual e importação de conteúdo</h4>
+                      <p class="text-xs text-slate-500 mt-1">Cadastre uma linha por subtópico. Para um tópico sem divisão, deixe o campo Subtópico em branco. As alterações são salvas no navegador e sincronizadas com o Supabase quando a conta estiver conectada.</p>
+                    </div>
+                    <button type="button" onclick="downloadSyllabusTemplate()" class="px-3 py-2 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs font-semibold"><i class="fa-solid fa-file-excel mr-1"></i>Baixar modelo Excel</button>
+                  </div>
+                  <form id="manual-syllabus-form" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3" onsubmit="event.preventDefault();saveManualSyllabusItem();">
+                    <label class="block text-xs font-semibold text-slate-600">Disciplina *
+                      <input id="manual-discipline" list="manual-discipline-options" required maxlength="180" placeholder="Ex.: Noções de AFO" class="mt-1 w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm font-normal">
+                      <datalist id="manual-discipline-options"></datalist>
+                    </label>
+                    <label class="block text-xs font-semibold text-slate-600">Tópico *
+                      <input id="manual-topic" required maxlength="240" placeholder="Ex.: Orçamento Público" class="mt-1 w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm font-normal">
+                    </label>
+                    <label class="block text-xs font-semibold text-slate-600">Subtópico (opcional)
+                      <input id="manual-subtopic" maxlength="600" placeholder="Ex.: Conceito e princípios orçamentários" class="mt-1 w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm font-normal">
+                    </label>
+                    <label class="block text-xs font-semibold text-slate-600">Prioridade
+                      <select id="manual-priority" class="mt-1 w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm font-normal"><option value="Vermelha">Vermelha (alta)</option><option value="Amarela" selected>Amarela (média)</option><option value="Verde">Verde (baixa)</option></select>
+                    </label>
+                    <label class="block text-xs font-semibold text-slate-600">Peso no edital (opcional)
+                      <input id="manual-weight" maxlength="80" placeholder="Ex.: 5 questões / peso 2" class="mt-1 w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm font-normal">
+                    </label>
+                    <div class="flex flex-wrap items-end gap-2">
+                      <button id="manual-save-btn" type="submit" class="px-4 py-2.5 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold"><i class="fa-solid fa-plus mr-1"></i>Adicionar item</button>
+                      <button type="button" onclick="clearManualSyllabusForm()" class="px-4 py-2.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold">Limpar</button>
+                    </div>
+                    <p id="manual-syllabus-form-status" class="md:col-span-2 xl:col-span-3 text-xs text-slate-500" aria-live="polite">Para incluir vários subtópicos, repita a disciplina e o tópico em linhas separadas. Não é necessário usar IA.</p>
+                  </form>
+                  <div class="border-t border-slate-200 dark:border-slate-700 pt-4 space-y-3">
+                    <div>
+                      <h5 class="font-bold text-sm text-slate-800 dark:text-slate-100"><i class="fa-solid fa-file-excel mr-2 text-emerald-700"></i>Importar estrutura do Excel/CSV/JSON</h5>
+                      <p class="text-xs text-slate-500 mt-1">Use o modelo acima. Cabeçalhos esperados: Disciplina, Tópico, Subtópico, Prioridade e Peso edital. Cada linha representa um tópico ou subtópico. A importação não depende de chave de IA.</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(180px,auto)_auto] gap-2 items-end">
+                      <label class="block text-xs font-semibold text-slate-600">Planilha de conteúdo
+                        <input id="manual-import-file" type="file" accept=".xlsx,.xls,.csv,.json" class="mt-1 block w-full rounded-lg border border-slate-300 bg-slate-50 p-2 text-xs font-normal">
+                      </label>
+                      <label class="block text-xs font-semibold text-slate-600">Como importar
+                        <select id="manual-import-mode" class="mt-1 w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm font-normal"><option value="merge" selected>Adicionar/atualizar sem apagar progresso</option><option value="replace">Substituir todo o edital (reinicia o progresso)</option></select>
+                      </label>
+                      <button type="button" onclick="importManualSyllabusFile()" class="px-4 py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold"><i class="fa-solid fa-file-import mr-1"></i>Importar estrutura</button>
+                    </div>
+                  </div>
+                  <details class="border-t border-slate-200 dark:border-slate-700 pt-3">
+                    <summary class="cursor-pointer py-2 text-sm font-bold text-slate-700 dark:text-slate-200">Ver, editar ou excluir conteúdo existente <span id="manual-syllabus-count" class="ml-1 text-xs font-normal text-slate-500"></span></summary>
+                    <div class="space-y-3 pt-2">
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <input id="manual-list-search" oninput="renderSyllabusManager()" placeholder="Buscar disciplina, tópico ou subtópico..." class="w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm">
+                        <select id="manual-list-discipline" onchange="renderSyllabusManager()" class="w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm"><option value="all">Todas as disciplinas</option></select>
+                      </div>
+                      <div id="manual-syllabus-list" class="space-y-3"></div>
+                    </div>
+                  </details>
+                </div>
+
+                <div class="app-card p-4 sm:p-5 mt-5 space-y-3">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <h4 class="font-bold text-sm sm:text-base section-heading"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>Análise assistida do edital com IA</h4>
+                        <p class="text-xs text-slate-500 mt-1">A IA pode sugerir disciplinas, tópicos, subtópicos, pesos e datas. Para cadastro manual ou importação estruturada de Excel, use o painel acima. Confira qualquer sugestão com o edital oficial antes de aplicar.</p>
+                      </div>
+                      <span class="text-[11px] text-slate-500">IA pelo servidor, sem chave no navegador</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-2 items-end">
+                      <label class="block text-xs font-semibold text-slate-600">Arquivo do edital
+                        <input id="ai-edital-file" type="file" accept=".xlsx,.xls,.csv,.json,.pdf" onchange="window._editalText='';document.getElementById('ai-results').textContent='Arquivo selecionado. Clique em Analisar com IA para extrair a estrutura proposta.'" class="mt-1 block w-full rounded-lg border border-slate-300 bg-slate-50 p-2 text-xs font-normal dark:bg-slate-900 dark:border-slate-600">
+                      </label>
+                      <button onclick="analyzeEditalAI()" class="px-4 py-2.5 rounded-lg bg-violet-700 hover:bg-violet-800 text-white text-sm font-semibold"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Analisar com IA</button>
+                    </div>
+                    <div id="ai-results" class="text-sm"></div>
+                </div>
+                <div id="edital-verticalizado-container" class="space-y-4 pt-2">
+                    <!-- Inserido por JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 4: DASHBOARD & KPIS -->
+        <div id="content-dashboard" class="tab-content hidden flex-1 flex flex-col space-y-5">
+            <div class="mx-auto w-full max-w-4xl space-y-5">
+                <section class="app-card p-5 sm:p-6 space-y-4">
+                    <div>
+                        <h2 class="font-bold text-lg section-heading"><i class="fa-solid fa-calendar-check text-indigo-600 mr-2"></i>Datas importantes</h2>
+                        <p id="dates-summary" class="mt-1 text-xs text-slate-500"></p>
+                    </div>
+                    <div id="dates-exam" class="rounded-xl border border-blue-100 dark:border-slate-700 bg-blue-50/70 dark:bg-slate-900/50 p-4"></div>
+                    <form id="date-add-form" onsubmit="addImportantDate(event)" class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end text-xs">
+                        <label class="sm:col-span-5 block font-semibold text-slate-500 dark:text-slate-400">Nova data<input id="date-new-title" required maxlength="120" placeholder="Ex.: Pagar a taxa de inscrição" class="mt-1 w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-medium outline-none"></label>
+                        <label class="sm:col-span-3 block font-semibold text-slate-500 dark:text-slate-400">Data<input id="date-new-date" type="date" required class="mt-1 w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-medium outline-none"></label>
+                        <label class="sm:col-span-3 block font-semibold text-slate-500 dark:text-slate-400">Até (opcional)<input id="date-new-end" type="date" class="mt-1 w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-medium outline-none"></label>
+                        <button type="submit" aria-label="Adicionar data" class="sm:col-span-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-2.5"><i class="fa-solid fa-plus"></i></button>
+                    </form>
+                </section>
+                <section class="app-card p-5 sm:p-6"><div id="dates-checklist" class="space-y-5"></div></section>
+            </div>
+        </div>
+
+        <div id="content-personalizacao" class="tab-content hidden flex-1 flex flex-col space-y-5">
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border dark:border-slate-700">
+            <h2 class="font-bold text-lg mb-1">Personalização do concurso</h2>
+            <p class="text-xs text-slate-500 mb-4">Defina grupos, prioridades e pesos por disciplina para o concurso selecionado.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div><label class="block text-xs mb-1">Nome do concurso</label><input id="contest-name" class="w-full rounded-lg border p-2 text-sm" placeholder="Ex.: Concurso do Tribunal 2027"></div>
+              <div><label class="block text-xs mb-1">Banca</label><input id="contest-board" class="w-full rounded-lg border p-2 text-sm" placeholder="Ex.: FCC"></div>
+              <div><label class="block text-xs mb-1">Data da prova</label><input id="contest-date" type="date" class="w-full rounded-lg border p-2 text-sm"></div>
+            </div>
+            <div class="flex flex-wrap gap-2 mt-4">
+              <button onclick="saveContestSettings()" class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold">Salvar concurso</button>
+              <button onclick="addContest()" class="px-4 py-2 rounded-lg bg-emerald-700 text-white text-sm font-semibold">Criar outro concurso</button>
+            </div>
+          </div>
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border dark:border-slate-700">
+            <div class="flex items-start gap-3 flex-wrap mb-3">
+              <div class="flex-1"><h3 class="font-bold"><i class="fa-solid fa-route mr-2 text-blue-600"></i>Estratégia das sugestões de estudo</h3><p class="text-xs text-slate-500 mt-1">Define a próxima disciplina recomendada no registro de estudos. A configuração é individual por concurso.</p></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-3 items-end">
+              <label class="block text-xs font-semibold">Ordem das próximas disciplinas
+                <select id="study-suggestion-mode" onchange="updateSuggestionModeHelp()" class="mt-1 w-full rounded-lg border border-slate-300 p-2.5 text-sm dark:bg-slate-900 dark:border-slate-600">
+                  <option value="priority_first">Prioridade primeiro — concluir a prioridade mais alta antes de avançar</option>
+                  <option value="priority_progress">Prioridade + progresso — menor percentual concluído primeiro</option>
+                  <option value="priority_date">Prioridade + data — há mais tempo sem estudar primeiro</option>
+                </select>
+              </label>
+              <button onclick="saveSuggestionMode()" class="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"><i class="fa-solid fa-floppy-disk mr-1"></i>Salvar estratégia</button>
+            </div>
+            <p id="study-suggestion-help" class="text-xs text-slate-500 mt-3">No modo “Prioridade primeiro”, a recomendação fica restrita à prioridade mais alta que ainda tenha tópicos pendentes.</p>
+          </div>
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border dark:border-slate-700">
+            <div class="flex items-start justify-between gap-3 flex-wrap mb-3">
+              <div><h3 class="font-bold">Parâmetros de prioridades e pesos</h3><p class="text-xs text-slate-500 mt-1">Defina o nome exibido, a cor e o peso-base de cada prioridade. Esses pesos orientam o cálculo de participação das disciplinas.</p></div>
+              <div class="flex gap-2 flex-wrap"><button onclick="savePrioritySettings()" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"><i class="fa-solid fa-check mr-1"></i>Salvar parâmetros</button><button onclick="recalculateDisciplineWeightsByPriority()" class="px-4 py-2 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-800 text-sm font-semibold"><i class="fa-solid fa-scale-balanced mr-1"></i>Recalcular pesos das disciplinas</button></div>
+            </div>
+            <div id="priority-config-table" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
+          </div>
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border dark:border-slate-700">
+            <div class="flex items-start justify-between gap-3 flex-wrap mb-3">
+              <div><h3 class="font-bold">Disciplinas do edital</h3><p class="text-xs text-slate-500 mt-1">A lista é criada a partir do Edital Verticalizado. Edite diretamente as células; o percentual é recalculado automaticamente para totalizar 100%.</p></div>
+              <div id="discipline-weight-summary" class="text-xs font-bold px-3 py-2 rounded-lg bg-blue-50 text-blue-800 border border-blue-100">Peso total: 100%</div>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2 mb-4">
+              <input id="new-discipline-name" class="flex-1 rounded-lg border border-slate-300 p-2.5 text-sm dark:bg-slate-900 dark:border-slate-600" placeholder="Nome da nova disciplina (ex.: Noções de Direito Constitucional)" onkeydown="if(event.key==='Enter'){event.preventDefault();addDisciplineToContest();}">
+              <button onclick="addDisciplineToContest()" class="px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold whitespace-nowrap"><i class="fa-solid fa-plus mr-1"></i>Adicionar disciplina</button>
+            </div>
+            <div class="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-xl">
+              <div id="discipline-custom-table" class="min-w-[760px]"></div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 mt-4">
+              <button onclick="saveDisciplineCustomizations()" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"><i class="fa-solid fa-floppy-disk mr-1"></i>Salvar disciplinas</button>
+              <span class="text-[11px] text-slate-500">Remover uma disciplina exclui seus tópicos do edital e do cronograma, mas preserva os lançamentos históricos já feitos.</span>
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border dark:border-slate-700">
+            <h2 class="font-bold text-lg mb-1">Cursos e trilhas de estudo</h2>
+            <p class="text-xs text-slate-500 mb-4">Cadastre as opções que aparecem no campo “Curso / trilha” do Registro de Estudos (ex.: Curso regular, Simulados, Estudo individual).</p>
+            <div class="flex flex-col sm:flex-row gap-2 mb-4">
+              <input id="new-track-name" maxlength="60" class="flex-1 rounded-lg border border-slate-300 p-2.5 text-sm dark:bg-slate-900 dark:border-slate-600" placeholder="Nome do curso ou trilha (ex.: Curso intensivo)" onkeydown="if(event.key==='Enter'){event.preventDefault();addStudyTrack();}">
+              <button onclick="addStudyTrack()" class="px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold whitespace-nowrap"><i class="fa-solid fa-plus mr-1"></i>Adicionar</button>
+            </div>
+            <ul id="study-tracks-manager" class="space-y-2"></ul>
+            <p class="mt-3 text-[11px] text-slate-500">Renomear uma trilha atualiza também os registros que já usam esse nome. Excluir apenas retira a opção da lista.</p>
+          </div>
+        </div>
+        <div id="content-configuracoes" class="tab-content hidden flex-1 flex flex-col space-y-5">
+          <div class="mx-auto w-full max-w-4xl space-y-5">
+            <section class="app-card p-5 sm:p-6">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 class="font-bold text-lg section-heading"><i class="fa-solid fa-cloud text-blue-600 mr-2"></i>Sincronização automática</h2>
+                  <p class="mt-1 text-xs text-slate-500">Entre com a sua conta para guardar o progresso na nuvem e usar o planejador em mais de um aparelho.</p>
+                </div>
+                <span id="cloud-status" class="text-xs rounded-full px-3 py-1 bg-slate-100 text-slate-600">Não conectado</span>
+              </div>
+              <p id="cloud-save-detail" class="mt-3 text-[11px] text-slate-500">As alterações são gravadas primeiro neste dispositivo e, quando conectado, enviadas à nuvem após uma breve pausa.</p>
+              <input id="sb-url" type="hidden"><input id="sb-key" type="hidden">
+              <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <label class="block font-medium">E-mail<input id="sb-email" type="email" autocomplete="username" placeholder="voce@exemplo.com" class="mt-1 w-full border border-slate-300 rounded-lg p-2.5 bg-slate-50 dark:bg-slate-900 dark:border-slate-600 font-normal"></label>
+                <label class="block font-medium">Senha<input id="sb-password" type="password" autocomplete="current-password" placeholder="Sua senha" class="mt-1 w-full border border-slate-300 rounded-lg p-2.5 bg-slate-50 dark:bg-slate-900 dark:border-slate-600 font-normal"></label>
+              </div>
+              <div class="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
+                <button onclick="testSupabaseConnection()" class="px-4 py-2.5 rounded-xl text-sm font-semibold transition bg-slate-700 hover:bg-slate-800 text-white">Verificar conexão</button>
+                <button onclick="signInSupabase()" class="px-4 py-2.5 rounded-xl text-sm font-semibold transition bg-blue-700 hover:bg-blue-800 text-white">Entrar e sincronizar</button>
+                <button onclick="signUpSupabase()" class="px-4 py-2.5 rounded-xl text-sm font-semibold transition bg-emerald-600 hover:bg-emerald-700 text-white">Criar conta</button>
+                <button onclick="signOutSupabase()" class="px-4 py-2.5 rounded-xl text-sm font-semibold transition border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800">Sair da conta</button>
+              </div>
+              <details class="mt-4 rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                <summary class="cursor-pointer text-sm font-bold text-slate-700 dark:text-slate-200">Mais opções de sincronização</summary>
+                <p class="mt-2 mb-3 text-xs text-slate-500">Use somente para comparar ou recuperar dados. O envio mescla os concursos e não substitui a nuvem às cegas.</p>
+                <div class="flex flex-wrap gap-2">
+                  <button onclick="syncSupabase('upload')" class="px-4 py-2.5 rounded-xl text-sm font-semibold transition bg-amber-500 hover:bg-amber-600 text-slate-900">Enviar dados atuais à nuvem</button>
+                  <button onclick="syncSupabase('download')" class="px-4 py-2.5 rounded-xl text-sm font-semibold transition bg-indigo-600 hover:bg-indigo-700 text-white">Baixar dados da nuvem</button>
+                  <button onclick="signInWithGoogleSupabase()" class="px-4 py-2.5 rounded-xl text-sm font-semibold transition border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800"><i class="fa-brands fa-google mr-1"></i>Entrar com Google</button>
+                </div>
+              </details>
+            </section>
+
+            <section class="app-card p-5 sm:p-6">
+              <h2 class="font-bold text-lg section-heading"><i class="fa-solid fa-box-archive text-emerald-600 mr-2"></i>Backup e arquivos</h2>
+              <p class="mt-1 text-xs text-slate-500">Exporte uma cópia de todos os concursos (editais, progresso, histórico e personalizações) ou restaure um backup existente. Guarde o arquivo em local seguro.</p>
+              <div class="mt-4 flex flex-wrap gap-3">
+                <button onclick="exportData()" class="px-4 py-2.5 rounded-xl text-sm font-semibold transition bg-emerald-50 hover:bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300"><i class="fa-solid fa-download mr-1"></i>Exportar backup completo (JSON)</button>
+                <label class="px-4 py-2.5 rounded-xl text-sm font-semibold transition bg-sky-50 hover:bg-sky-100 text-sky-800 dark:bg-sky-950/30 dark:text-sky-300 cursor-pointer"><i class="fa-solid fa-upload mr-1"></i>Restaurar backup (JSON)<input type="file" id="import-file" onchange="importData(event)" class="hidden" accept=".json"></label>
+              </div>
+            </section>
+
+            <section class="app-card p-5 sm:p-6">
+              <h2 class="font-bold text-lg section-heading"><i class="fa-solid fa-list-check text-indigo-600 mr-2"></i>Verificação dos tópicos</h2>
+              <p class="mt-1 text-xs text-slate-500">Confere se o Cronograma, o Edital Verticalizado e o Registro de Estudos usam os mesmos tópicos e aponta registros que ficaram sem tópico correspondente.</p>
+              <button onclick="renderTopicDiagnostics()" class="mt-4 px-4 py-2.5 rounded-xl text-sm font-semibold transition bg-indigo-600 hover:bg-indigo-700 text-white"><i class="fa-solid fa-magnifying-glass mr-1"></i>Verificar agora</button>
+              <div id="topic-diagnostics-result" class="mt-4"></div>
+            </section>
+
+            <section class="app-card p-5 sm:p-6 border border-red-200 dark:border-red-900/60">
+              <h2 class="font-bold text-lg text-red-700 dark:text-red-300"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Zona de risco</h2>
+              <p class="mt-1 text-xs text-slate-500">Reinicia o progresso do concurso ativo. Gere um backup antes de continuar.</p>
+              <button onclick="confirmReset()" class="mt-4 px-4 py-2.5 rounded-xl text-sm font-semibold transition bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-300"><i class="fa-solid fa-rotate-right mr-1"></i>Resetar progresso</button>
+            </section>
+          </div>
+        </div>
+    </main>
+    </div>
+
+    <!-- Modal de edição do histórico de estudos -->
+    <div id="session-edit-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 sm:p-6 max-w-3xl w-full shadow-xl border border-slate-200 dark:border-slate-700 space-y-4 max-h-[92vh] overflow-y-auto">
+        <div class="flex items-start justify-between gap-3"><div><h3 class="font-bold text-base text-blue-800 dark:text-blue-300">Editar sessão de estudo</h3><p class="text-xs text-slate-500 mt-1">Altere os dados do histórico. Os totais do tópico serão ajustados junto com a sessão.</p></div><button type="button" onclick="closeSessionEdit()" class="rounded-lg border px-3 py-1.5 text-sm">Fechar</button></div>
+        <form id="session-edit-form" onsubmit="saveEditedSession(event)" class="session-edit-grid text-xs">
+          <input type="hidden" id="edit-session-id">
+          <label class="span-3">Data<input id="edit-session-date" type="date" required class="mt-1 rounded-lg border p-2 text-sm"></label>
+          <label class="span-4">Tipo de conteúdo<select id="edit-session-type1" class="mt-1 rounded-lg border p-2 text-sm"><option>Conhecimentos Específicos</option><option>Conhecimentos Gerais</option></select></label>
+          <label class="span-5">Tipo de estudo<select id="edit-session-type2" class="mt-1 rounded-lg border p-2 text-sm"><option>Estudo Teórico</option><option>Resolução de Questões</option><option>Revisão</option><option>Simulado</option></select></label>
+          <label class="span-4">Disciplina<select id="edit-session-discipline" onchange="updateEditSessionTopics()" required class="mt-1 rounded-lg border p-2 text-sm"></select></label>
+          <label class="span-8">Tópico e subtópico<select id="edit-session-item" required class="mt-1 rounded-lg border p-2 text-sm"></select></label>
+          <label class="span-3">Duração (minutos)<input id="edit-session-minutes" type="number" min="1" required class="mt-1 rounded-lg border p-2 text-sm"></label>
+          <label class="span-3">Questões resolvidas<input id="edit-session-questions" type="number" min="0" required class="mt-1 rounded-lg border p-2 text-sm"></label>
+          <label class="span-3">Foi revisão?<select id="edit-session-review" class="mt-1 rounded-lg border p-2 text-sm"><option value="0">Não</option><option value="1">Sim (+1 ciclo)</option></select></label>
+          <div class="span-3 flex items-end gap-2"><button type="button" onclick="closeSessionEdit()" class="flex-1 rounded-lg border px-3 py-2 font-semibold">Cancelar</button><button type="submit" class="flex-1 rounded-lg bg-blue-700 text-white px-3 py-2 font-bold">Salvar alterações</button></div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal de Anotações -->
+    <div id="custom-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 sm:p-6 max-w-md w-full shadow-xl border border-slate-200 dark:border-slate-700 space-y-4">
+            <h3 id="modal-title" class="font-bold text-sm sm:text-base">Anotações do Subtópico</h3>
+            <textarea id="modal-textarea" rows="4" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Insira suas anotações ou links de revisão..."></textarea>
+            <div class="flex justify-end space-x-2">
+                <button onclick="closeModal()" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-200 transition">Cancelar</button>
+                <button onclick="saveModalNote()" class="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Diálogo -->
+    <div id="custom-dialog" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full shadow-xl border border-slate-200 dark:border-slate-700 space-y-4 text-center">
+            <div id="dialog-icon" class="text-3xl text-blue-500 mb-1"></div>
+            <h3 id="dialog-title" class="font-bold text-sm sm:text-base">Aviso</h3>
+            <p id="dialog-message" class="text-xs text-slate-600 dark:text-slate-300"></p>
+            <div id="dialog-buttons" class="flex justify-center space-x-2 pt-2">
+                <button onclick="closeDialog()" class="px-5 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="./js/01-base.js"></script>
+    <script src="./js/02-sugestoes.js"></script>
+    <script src="./js/03-utilitarios.js"></script>
+    <script src="./js/04-inicio.js"></script>
+    <script src="./js/05-registro.js"></script>
+    <script src="./js/06-edital.js"></script>
+    <script src="./js/07-concursos.js"></script>
+    <script src="./js/08-importacao-ia.js"></script>
+    <script src="./js/09-sincronizacao.js"></script>
+    <script src="./js/10-dados-backup.js"></script>
+    <script src="./js/11-datas-anotacoes.js"></script>
+    <script src="./js/12-iniciar.js"></script>
+    <script src="./js/auth.js"></script>
+    <script src="./js/pwa.js"></script>
+
+</body>
