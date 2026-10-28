@@ -14,14 +14,15 @@
     return ORDEM_REFEICOES.find(m => !feitas.has(m)) || 'Ceia';
   }
 
-  function getFilteredRegistros() {
+  // ignorarMarcadores = true: aplica só período e busca (usado nos contadores dos filtros).
+  function getFilteredRegistros(ignorarMarcadores = false) {
     const tipo = $('#filtro-periodo').value;
     const busca = $('#busca-input').value.toLowerCase().trim();
     const hoje = hojeLocal();
     const anoAtual = new Date().getFullYear().toString();
 
-    const soSemEstimativa = $('#filtro-sem-estimativa').checked;
-    const soPoucas = $('#filtro-poucas-refeicoes').checked, cont = soPoucas ? refeicoesPorDia() : null;
+    const soSemEstimativa = !ignorarMarcadores && $('#filtro-sem-estimativa').checked;
+    const soPoucas = !ignorarMarcadores && $('#filtro-poucas-refeicoes').checked, cont = soPoucas ? refeicoesPorDia() : null;
     return state.registros.filter(r => {
       if (soSemEstimativa && !semEstimativa(r)) return false;
       if (soPoucas && !diaIncompleto(cont, r.data)) return false;
@@ -123,8 +124,10 @@
   function renderTableDiario() {
     const tbody = $('#table-body');
     const filtered = getFilteredRegistros();
-    $('#contador-sem-estimativa').textContent = state.registros.filter(semEstimativa).length;
-    { const c = refeicoesPorDia(); $('#contador-poucas-refeicoes').textContent = Object.keys(c).filter(d => diaIncompleto(c, d)).length; }
+    // V39.1: contadores respeitam o período e a busca selecionados.
+    { const doPeriodo = getFilteredRegistros(true), c = refeicoesPorDia();
+      $('#contador-sem-estimativa').textContent = doPeriodo.filter(semEstimativa).length;
+      $('#contador-poucas-refeicoes').textContent = new Set(doPeriodo.map(r => r.data).filter(d => diaIncompleto(c, d))).size; }
 
     if (filtered.length === 0) {
       tbody.innerHTML = `<tr><td colspan="10" class="text-center py-12 text-slate-400">${$('#filtro-poucas-refeicoes').checked ? 'Nenhum dia com menos de 4 refeições neste período. 🎉' : $('#filtro-sem-estimativa').checked ? 'Nenhuma refeição sem estimativa neste período. 🎉' : 'Nenhum registro encontrado no período.'}</td></tr>`;

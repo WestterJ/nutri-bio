@@ -1,4 +1,4 @@
-const CACHE_NAME = 'diario-nutricional-v39';
+const CACHE_NAME = 'diario-nutricional-v39-1';
 const APP_SHELL = [
   './', './index.html', './manifest.webmanifest', './supabase-config.js', './css/app.css',
   './js/01-utils.js', './js/02-estado.js', './js/03-nuvem.js', './js/04-diario.js', './js/05-ia-refeicao.js',
