@@ -11,9 +11,13 @@ create table if not exists public.ia_logs (
   tamanho_kb  int,             -- tamanho do pedido enviado
   pre_ms      int,             -- tempo na função antes do Gemini (login + limite diário)
   gemini_ms   int,             -- tempo da chamada ao Gemini dentro da função
+  modelo      text,            -- modelo que respondeu
+  usou_reserva boolean,        -- true se o modelo principal falhou e o reserva respondeu
+  motivo_reserva text,         -- timeout | 404 | 429 | 500 | 503 | 504
   erro        text
 );
-alter table public.ia_logs add column if not exists pre_ms int, add column if not exists gemini_ms int; -- para tabelas criadas antes da V42b
+alter table public.ia_logs add column if not exists pre_ms int, add column if not exists gemini_ms int,
+  add column if not exists modelo text, add column if not exists usou_reserva boolean, add column if not exists motivo_reserva text; -- para tabelas criadas antes da V42b
 create index if not exists ia_logs_user_data_idx on public.ia_logs (user_id, created_at desc);
 alter table public.ia_logs enable row level security;
 drop policy if exists "ia_logs_insert_proprio" on public.ia_logs;
@@ -29,3 +33,6 @@ create policy "ia_logs_select_proprio" on public.ia_logs for select to authentic
 -- Últimas falhas
 -- select created_at, tipo, status, http_status, duracao_ms, erro
 --   from ia_logs where status <> 'ok' order by created_at desc limit 20;
+-- Quanto o modelo reserva está sendo usado e por quê
+-- select modelo, usou_reserva, motivo_reserva, count(*) n, round(avg(gemini_ms)/1000.0,1) seg_medio
+--   from ia_logs where tipo like 'refeicao%' group by 1,2,3 order by n desc;

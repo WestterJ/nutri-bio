@@ -45,3 +45,6 @@ IA mais rapida e transparente: removidas as 3 tentativas automaticas (uma chamad
 
 V42 (ajuste da funcao dynamic-service, versao 9 no Supabase)
 Nova funcao com modo rapido "refeicao" (o app envia modo: 'refeicao'): 1 tentativa, 25 s, raciocinio interno desligado, sem retentativas por erro 5xx. O limite diario (60/24 h) so conta chamadas que deram certo. A funcao devolve o cabecalho Server-Timing e o app grava pre_ms e gemini_ms em ia_logs. Aviso de limite diario agora mostra a mensagem real. Codigo da funcao: supabase-functions/dynamic-service/index.ts.
+
+V42 (modelo reserva, funcao dynamic-service versao 10)
+No modo rapido das refeicoes, se o modelo principal (secret GEMINI_MODEL) nao responder em 12 s ou der 404/429/500/503/504, a funcao tenta o modelo reserva (secret GEMINI_MODEL_FALLBACK, padrao gemini-3.1-flash-lite; valor "off" desativa). O aviso mostra "(modelo reserva)" quando ele responde, e ia_logs grava modelo, usou_reserva e motivo_reserva. Os demais modos (relatorio, bioimpedancia, edital, agenda) nao usam reserva.
