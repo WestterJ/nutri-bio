@@ -95,12 +95,18 @@
 
   // Log de cada chamada de IA no Supabase (ia_logs). Nunca atrapalha o uso: falha em silêncio.
   let iaLogDesativado = false;
-  // Cabeçalho Server-Timing da função: "pre;dur=120, gemini;dur=3500" -> { pre_ms, gemini_ms }
+  // Cabeçalho Server-Timing da função: "pre;dur=120, gemini;dur=3500, modelo;desc=x, reserva;desc=timeout"
+  // -> { pre_ms, gemini_ms, modelo, usou_reserva, motivo_reserva }
   function lerServerTiming(h) {
     const out = {};
     String(h || '').split(',').forEach(parte => {
-      const m = /^\s*(pre|gemini);dur=([\d.]+)/.exec(parte);
-      if (m) out[m[1] + '_ms'] = Math.round(Number(m[2]));
+      const t = parte.trim();
+      let m = /^(pre|gemini);dur=([\d.]+)/.exec(t);
+      if (m) { out[m[1] + '_ms'] = Math.round(Number(m[2])); return; }
+      m = /^modelo;desc="?([^"\s;]+)/.exec(t);
+      if (m) { out.modelo = m[1]; return; }
+      m = /^reserva;desc="?([^"\s;]+)/.exec(t);
+      if (m) { out.usou_reserva = true; out.motivo_reserva = m[1]; }
     });
     return out;
   }
@@ -300,6 +306,7 @@
       // A chave Gemini fica no servidor; o navegador envia somente a sessão autenticada e o payload.
       const resp = await chamarNutriGemini(payload, { signal: iaCancelamento.signal, tipo: isPhoto ? 'refeicao_foto' : 'refeicao_texto' });
       const segundos = pararRelogio();
+      const viaReserva = resp.iaTiming && resp.iaTiming.usou_reserva ? ' (modelo reserva)' : '';
 
       const json = await resp.json();
       const parts = json && json.candidates && json.candidates[0] && json.candidates[0].content
@@ -354,8 +361,8 @@
       $('#reg-obs').value = [notaExistente, `Estimativa da IA: ${observacaoIA}`].filter(Boolean).join('\n');
 
       showToast(isPhoto
-        ? `Foto analisada em ${fmtSeg(segundos)}. Confira os alimentos e as porções antes de salvar.`
-        : `Macros calculados em ${fmtSeg(segundos)}. Confira as porções estimadas antes de salvar.`);
+        ? `Foto analisada em ${fmtSeg(segundos)}${viaReserva}. Confira os alimentos e as porções antes de salvar.`
+        : `Macros calculados em ${fmtSeg(segundos)}${viaReserva}. Confira as porções estimadas antes de salvar.`);
     } catch (e) {
       if (e && e.cancelado) { showToast('Análise cancelada. Seus dados continuam no formulário.'); return; }
       console.error('Falha ao analisar refeição com Gemini:', e);
