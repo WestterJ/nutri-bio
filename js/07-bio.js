@@ -81,7 +81,7 @@
     if (!supabaseClient || !supabaseUser) { showToast('Entre na sua conta para usar a IA.'); return; }
     if (!file || file.type !== 'application/pdf') { showToast('Selecione um arquivo PDF.'); return; }
     if (file.size > 6.5 * 1024 * 1024) { showToast('PDF muito grande (máximo 6,5 MB).'); return; }
-    const btn = $('#btn-bio-ia'); btn.disabled = true; bioIaStatus('Lendo o PDF com IA... pode levar até 1–2 minutos.');
+    const btn = $('#btn-bio-ia'); btn.disabled = true; const pararRelogio = iaRelogio(bioIaStatus, 'Lendo o PDF com IA (pode levar até 1–2 min)...');
     $('#bio-ia-lista').classList.add('hidden'); $('#btn-bio-ia-importar').classList.add('hidden');
     try {
       const dataURL = await lerArquivoComoDataURL(file);
@@ -92,7 +92,8 @@
         contents: [{ role: 'user', parts: [{ inlineData: { mimeType: 'application/pdf', data: dataURL.split(',')[1] } }, { text: 'Extraia todas as avaliações de bioimpedância deste PDF.' }] }],
         generationConfig: { responseMimeType: 'application/json', temperature: 0.1, maxOutputTokens: 1800, responseSchema: { type: 'OBJECT', properties: { observacoes: { type: 'STRING' }, registros: { type: 'ARRAY', items: { type: 'OBJECT', properties: props, required: ['data', 'peso'] } } }, required: ['observacoes', 'registros'] } }
       };
-      const resp = await chamarNutriGemini(payload, { timeoutMs: 90000, onStatus: bioIaStatus });
+      const resp = await chamarNutriGemini(payload, { tipo: 'bio', timeoutMs: 90000 });
+      pararRelogio();
       const json = await resp.json();
       const txt = json?.candidates?.[0]?.content?.parts?.find(p => typeof p?.text === 'string')?.text;
       if (!txt) throw new Error('A IA não retornou conteúdo.');
@@ -104,7 +105,7 @@
     } catch (err) {
       bioIaStatus('');
       showToast('Falha na leitura do PDF: ' + (err.message || 'erro desconhecido'));
-    } finally { btn.disabled = false; }
+    } finally { pararRelogio(); btn.disabled = false; }
   };
 
   $('#btn-bio-ia-importar').onclick = () => {

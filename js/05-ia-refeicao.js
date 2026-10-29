@@ -78,14 +78,43 @@
       Number.isFinite(gordura) && gordura >= 0 && gordura <= 1000;
   }
 
-  // V40: chamada com tempo máximo, novas tentativas automáticas e cancelamento.
-  // Erros temporários (limite 429 sem cota esgotada, 500/502/503/504, rede, tempo esgotado) são repetidos
-  // até 3 vezes com espera crescente. Cota esgotada, 400, 401/403 e 404 não são repetidos.
+  // V42: UMA chamada por clique (sem novas tentativas automáticas), com tempo máximo, cancelamento,
+  // contagem de segundos e log no Supabase (tabela ia_logs). Se falhar, o usuário decide clicar de novo.
   let iaCancelamento = null;
-  const esperar = (ms, sinal) => new Promise((ok, falha) => {
-    const t = setTimeout(ok, ms);
-    if (sinal) sinal.addEventListener('abort', () => { clearTimeout(t); falha(Object.assign(new Error('Cancelado.'), { cancelado: true })); }, { once: true });
-  });
+  const IA_TIMEOUT_REFEICAO_MS = 30000;
+  // O raciocínio interno do Gemini é desligado no servidor (função dynamic-service, modo "refeicao").
+
+  // Contagem em segundos reutilizável (refeição, bioimpedância, relatório). Devolve a função que para o relógio e informa os segundos.
+  function iaRelogio(setTexto, base) {
+    const inicio = Date.now();
+    setTexto(`${base} 0 s`);
+    const t = setInterval(() => setTexto(`${base} ${Math.round((Date.now() - inicio) / 1000)} s`), 1000);
+    return () => { clearInterval(t); return (Date.now() - inicio) / 1000; };
+  }
+  const fmtSeg = seg => (Math.round(seg * 10) / 10).toString().replace('.', ',') + ' s';
+
+  // Log de cada chamada de IA no Supabase (ia_logs). Nunca atrapalha o uso: falha em silêncio.
+  let iaLogDesativado = false;
+  // Cabeçalho Server-Timing da função: "pre;dur=120, gemini;dur=3500" -> { pre_ms, gemini_ms }
+  function lerServerTiming(h) {
+    const out = {};
+    String(h || '').split(',').forEach(parte => {
+      const m = /^\s*(pre|gemini);dur=([\d.]+)/.exec(parte);
+      if (m) out[m[1] + '_ms'] = Math.round(Number(m[2]));
+    });
+    return out;
+  }
+  async function registrarLogIA(info) {
+    if (iaLogDesativado || !supabaseClient || !supabaseUser) return;
+    try {
+      const { error } = await supabaseClient.from('ia_logs').insert({ user_id: supabaseUser.id, ...info });
+      if (error) {
+        if (/ia_logs|relation|schema cache|does not exist/i.test(String(error.message || ''))) iaLogDesativado = true;
+        console.warn('Log de IA não gravado:', error.message);
+      }
+    } catch (err) { console.warn('Log de IA não gravado:', err); }
+  }
+
   async function chamarNutriGeminiUmaVez(payload, timeoutMs, sinalExterno) {
     if (!supabaseClient || !supabaseConfig.url || !supabaseConfig.key) {
       throw new Error('A configuração do Supabase não está disponível. Recarregue o aplicativo e entre novamente.');
@@ -110,6 +139,7 @@
         body: JSON.stringify(payload),
         signal: ctrl.signal
       });
+      const iaTiming = lerServerTiming(response.headers.get('server-timing'));
       if (!response.ok) {
         let detail = `Serviço de IA retornou HTTP ${response.status}.`;
         try {
@@ -120,8 +150,10 @@
         const error = new Error(detail);
         error.status = response.status;
         error.detail = detail;
+        error.iaTiming = iaTiming;
         throw error;
       }
+      response.iaTiming = iaTiming;
       return response;
     } catch (e) {
       if (e && e.name === 'AbortError') {
@@ -134,34 +166,27 @@
       if (sinalExterno) sinalExterno.removeEventListener('abort', repassar);
     }
   }
-  function erroTemporarioIA(e) {
-    if (!e || e.cancelado) return false;
-    const st = Number(e.status);
-    if (st === 429) return !/quota|daily|per.day|limit: 0|billing/i.test(String(e.detail || e.message || ''));
-    return [408, 500, 502, 503, 504].includes(st) || e.name === 'TypeError';
-  }
   async function chamarNutriGemini(payload, opcoes = {}) {
-    const tentativas = opcoes.tentativas || 3;
-    const timeoutMs = opcoes.timeoutMs || (payload && payload.modo === 'relatorio' ? 90000 : 45000);
-    const aviso = typeof opcoes.onStatus === 'function' ? opcoes.onStatus : () => {};
+    const tipo = opcoes.tipo || (payload && payload.modo === 'relatorio' ? 'relatorio' : 'outro');
+    const timeoutMs = opcoes.timeoutMs || (tipo === 'relatorio' ? 90000 : IA_TIMEOUT_REFEICAO_MS);
     const sinal = opcoes.signal;
-    let ultimo;
-    for (let n = 1; n <= tentativas; n++) {
+    const inicio = Date.now();
+    let tamanhoKb = null;
+    try { tamanhoKb = Math.round(JSON.stringify(payload).length / 1024); } catch (_) {}
+    try {
       if (sinal && sinal.aborted) throw Object.assign(new Error('Cancelado.'), { cancelado: true });
-      try {
-        if (n > 1) aviso(`Tentativa ${n} de ${tentativas}...`);
-        return await chamarNutriGeminiUmaVez(payload, timeoutMs, sinal);
-      } catch (e) {
-        ultimo = e;
-        if (n === tentativas || !erroTemporarioIA(e)) throw e;
-        const pedido = /retry in ([\d.]+)\s*s/i.exec(String(e.detail || e.message || ''));
-        const espera = Math.min(30000, pedido ? Math.ceil(Number(pedido[1]) * 1000) : (n === 1 ? 3000 : 8000)) + Math.round(Math.random() * 800);
-        const motivo = Number(e.status) === 429 ? 'limite temporário' : Number(e.status) === 503 ? 'IA sobrecarregada' : e.tempoEsgotado ? 'demora na resposta' : 'falha temporária';
-        aviso(`${motivo[0].toUpperCase() + motivo.slice(1)}. Nova tentativa em ${Math.round(espera / 1000)} s (${n + 1} de ${tentativas})...`);
-        await esperar(espera, sinal);
-      }
+      const resp = await chamarNutriGeminiUmaVez(payload, timeoutMs, sinal);
+      registrarLogIA({ tipo, status: 'ok', http_status: resp.status, duracao_ms: Date.now() - inicio, tamanho_kb: tamanhoKb, ...(resp.iaTiming || {}) });
+      return resp;
+    } catch (e) {
+      registrarLogIA({
+        tipo, status: e && e.cancelado ? 'cancelado' : (e && e.tempoEsgotado ? 'timeout' : 'erro'),
+        http_status: Number(e && e.status) || null, duracao_ms: Date.now() - inicio, tamanho_kb: tamanhoKb,
+        erro: String((e && (e.detail || e.message)) || '').slice(0, 300),
+        ...((e && e.iaTiming) || {})
+      });
+      throw e;
     }
-    throw ultimo;
   }
 
   // V40: reaproveita a estimativa de uma refeição idêntica já lançada (sem chamar a IA).
@@ -213,10 +238,7 @@
     const btnCancelar = $('#btn-ia-cancelar');
     if (btnCancelar) btnCancelar.classList.remove('hidden');
     const textoBase = isPhoto ? 'Analisando a foto e estimando porções...' : 'Estimando porções e calculando os macronutrientes...';
-    const inicioIA = Date.now();
-    const relogio = setInterval(() => { const seg = Math.round((Date.now() - inicioIA) / 1000); if (!loader.dataset.aviso) loader.textContent = `${textoBase} ${seg} s`; }, 1000);
-    delete loader.dataset.aviso;
-    loader.textContent = textoBase;
+    const pararRelogio = iaRelogio(t => { loader.textContent = t; }, textoBase);
     loader.classList.remove('hidden');
     btnFoto.disabled = true;
     btnTexto.disabled = true;
@@ -225,16 +247,11 @@
 
     try {
       const systemPrompt = [
-        'Você é um estimador nutricional cuidadoso que responde em português do Brasil.',
-        'Seja rápido e objetivo. Estime cada alimento separadamente e devolva somente o JSON solicitado pelo esquema.',
-        'Use as quantidades que o usuário informar; não substitua nem ignore quantidades explícitas.',
-        'Se a quantidade não for informada, estime uma porção caseira plausível e registre essa suposição no campo porcao e em observacoes.',
-        'Para uma foto, descreva somente o que for razoavelmente visível. Não afirme que consegue saber o peso exato, a receita, o óleo, molhos ou ingredientes escondidos. Estime gramas com incerteza apropriada.',
-        'Não invente alimentos que não aparecem na foto ou que não foram citados no texto. Separe componentes diferentes quando for possível estimá-los.',
-        'quantidade_g é o peso aproximado total comestível daquele item em gramas. porcao deve ser uma medida caseira compreensível e conter a estimativa em gramas.',
-        'Forneça somente gramas de proteína, carboidratos e gorduras de cada item, como números não negativos. Não forneça calorias; o aplicativo as calcula localmente a partir dos macros.',
-        'Mantenha valores nutricionais plausíveis para o alimento e a porção. Não confunda peso do alimento com gramas de macronutrientes. Para frango cozido/grelhado sem pele, 150 g normalmente têm cerca de 40 a 47 g de proteína; 150 g de frango cru normalmente têm cerca de 32 a 36 g. Ajuste ao estado cru/cozido e não retorne proteína próxima ao peso total.',
-        'descricao deve ser uma descrição clara dos alimentos com suas porções estimadas, sem alegar precisão exata. observacoes deve informar incertezas, suposições e itens que não puderam ser identificados com segurança.'
+        'Você estima macronutrientes de refeições, em português do Brasil. Responda apenas o JSON do esquema, de forma objetiva.',
+        'Estime cada alimento separadamente e respeite as quantidades informadas; sem quantidade, use uma porção caseira plausível e registre a suposição em observacoes.',
+        'Em foto, considere só o que é visível; não afirme peso exato, óleo, molhos ou ingredientes ocultos.',
+        'quantidade_g é o peso comestível do item; proteinas_g, carboidratos_g e gorduras_g são os gramas de cada macro naquela porção, não o peso do alimento (ex.: 150 g de frango cozido sem pele ≈ 40–47 g de proteína; cru ≈ 32–36 g). Não calcule calorias.',
+        'porcao é a medida caseira com o peso em gramas. observacoes é curta e traz incertezas e suposições.'
       ].join(' ');
 
       const userParts = [];
@@ -249,8 +266,7 @@
       const responseSchema = {
         type: 'OBJECT',
         properties: {
-          descricao: { type: 'STRING', description: 'Descrição da refeição com as porções estimadas de cada alimento.' },
-          observacoes: { type: 'STRING', description: 'Incertezas e suposições utilizadas para estimar as porções e os macros.' },
+          observacoes: { type: 'STRING', description: 'Incertezas e suposições, em poucas frases.' },
           itens: {
             type: 'ARRAY',
             items: {
@@ -267,22 +283,23 @@
             }
           }
         },
-        required: ['descricao', 'observacoes', 'itens']
+        required: ['observacoes', 'itens']
       };
 
       const payload = {
+        modo: 'refeicao', // a função usa o modo rápido: 1 tentativa, 25 s, sem raciocínio interno
         systemInstruction: { parts: [{ text: systemPrompt }] },
         contents: [{ role: 'user', parts: userParts }],
         generationConfig: {
           responseMimeType: 'application/json',
           responseSchema,
-          temperature: 0.2,
-          maxOutputTokens: 1800
+          temperature: 0.2
         }
       };
 
       // A chave Gemini fica no servidor; o navegador envia somente a sessão autenticada e o payload.
-      let resp = await chamarNutriGemini(payload, { signal: iaCancelamento.signal, onStatus: msg => { loader.dataset.aviso = '1'; loader.textContent = msg; setTimeout(() => { delete loader.dataset.aviso; }, 4000); } });
+      const resp = await chamarNutriGemini(payload, { signal: iaCancelamento.signal, tipo: isPhoto ? 'refeicao_foto' : 'refeicao_texto' });
+      const segundos = pararRelogio();
 
       const json = await resp.json();
       const parts = json && json.candidates && json.candidates[0] && json.candidates[0].content
@@ -337,8 +354,8 @@
       $('#reg-obs').value = [notaExistente, `Estimativa da IA: ${observacaoIA}`].filter(Boolean).join('\n');
 
       showToast(isPhoto
-        ? 'Foto analisada. Confira os alimentos e as porções estimadas antes de salvar.'
-        : 'Macros calculados por item. Confira as porções estimadas antes de salvar.');
+        ? `Foto analisada em ${fmtSeg(segundos)}. Confira os alimentos e as porções antes de salvar.`
+        : `Macros calculados em ${fmtSeg(segundos)}. Confira as porções estimadas antes de salvar.`);
     } catch (e) {
       if (e && e.cancelado) { showToast('Análise cancelada. Seus dados continuam no formulário.'); return; }
       console.error('Falha ao analisar refeição com Gemini:', e);
@@ -353,17 +370,19 @@
         // se o 404 se refere ao nome do modelo, versão da API ou outro recurso.
         const detalhe404 = detalhe ? detalhe.slice(0, 220) : 'A API não retornou uma descrição adicional.';
         showToast(`Gemini HTTP 404 — ${detalhe404}`);
+      } else if (status === 429 && /limite di[aá]rio/i.test(detalhe)) {
+        showToast(detalhe);
       } else if (status === 429) {
         const quota = /quota|daily|per.day|limit: 0|billing/i.test(detalhe);
         showToast(quota
           ? 'A cota de uso do Gemini foi atingida. Aguarde a renovação da cota ou confira os limites do projeto no Google AI Studio.'
-          : 'O Gemini continuou recusando por limite temporário (erro 429) após 3 tentativas. Aguarde 1 minuto e tente novamente.');
+          : 'O Gemini recusou por limite temporário (erro 429). Seus dados continuam no formulário. Aguarde cerca de 1 minuto e tente novamente.');
       } else if (status === 503) {
-        showToast('O Gemini segue sobrecarregado (erro 503) após 3 tentativas. Seus dados continuam no formulário. Tente de novo em 1–2 minutos.');
+        showToast('O Gemini está sobrecarregado (erro 503). Seus dados continuam no formulário. Tente de novo em instantes.');
       } else if (status === 500 || status === 502 || status === 504) {
         showToast(`O serviço do Gemini apresentou uma falha temporária (erro ${status}). Aguarde um pouco e tente novamente.`);
       } else if (status === 408) {
-        showToast('A IA não respondeu dentro do limite em 3 tentativas. Tente de novo ou descreva a refeição de forma mais curta.');
+        showToast(`A IA não respondeu em ${Math.round(IA_TIMEOUT_REFEICAO_MS / 1000)} s. Seus dados continuam no formulário. Tente de novo ou descreva a refeição de forma mais curta.`);
       } else if (e && e.name === 'TypeError') {
         showToast('Não foi possível conectar ao Gemini. Verifique a internet, VPN ou bloqueios de rede e tente novamente.');
       } else if (e && e.message && /imagem|foto|formato|identificar|resposta veio vazia|lista de alimentos/i.test(e.message)) {
@@ -374,7 +393,7 @@
         showToast('Não foi possível concluir a análise. Nenhum alimento foi salvo automaticamente. Tente novamente; se persistir, abra o Console (F12) e envie o erro.');
       }
     } finally {
-      clearInterval(relogio);
+      pararRelogio();
       iaCancelamento = null;
       if (btnCancelar) btnCancelar.classList.add('hidden');
       loader.classList.add('hidden');

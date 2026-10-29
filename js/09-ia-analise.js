@@ -48,9 +48,10 @@
     if (!supabaseClient || !supabaseUser) { showToast('Entre na sua conta para usar a IA.'); return; }
     const dados = montarDadosAnalise(Number($('#ia-periodo').value) || 30);
     if (!dados.dias_com_calorias) { showToast('Não há refeições com calorias estimadas neste período.'); return; }
-    const btn = $('#btn-ia-analise'); btn.disabled = true; iaStatus('Analisando o período com IA... pode levar até 1–2 minutos.');
+    const btn = $('#btn-ia-analise'); btn.disabled = true; const pararRelogio = iaRelogio(iaStatus, 'Analisando o período com IA (pode levar até 1–2 min)...');
     try {
-      const resp = await chamarNutriGemini({ modo: 'relatorio', systemInstruction: { parts: [{ text: IA_ANALISE_PROMPT }] }, contents: [{ role: 'user', parts: [{ text: 'Dados do diário (JSON):\n' + JSON.stringify(dados) }] }], generationConfig: { responseMimeType: 'application/json', responseSchema: IA_ANALISE_SCHEMA } }, { onStatus: iaStatus });
+      const resp = await chamarNutriGemini({ modo: 'relatorio', systemInstruction: { parts: [{ text: IA_ANALISE_PROMPT }] }, contents: [{ role: 'user', parts: [{ text: 'Dados do diário (JSON):\n' + JSON.stringify(dados) }] }], generationConfig: { responseMimeType: 'application/json', responseSchema: IA_ANALISE_SCHEMA } }, { tipo: 'relatorio' });
+      pararRelogio();
       const json = await resp.json();
       const txt = json?.candidates?.[0]?.content?.parts?.find(p => typeof p?.text === 'string')?.text;
       if (!txt) throw new Error('A IA não retornou conteúdo.');
@@ -58,7 +59,7 @@
       renderAnaliseIA(a, dados); iaStatus('');
       salvarAnaliseIA(a, dados);
     } catch (err) { iaStatus(''); showToast('Falha na análise: ' + (err.message || 'erro desconhecido')); }
-    finally { btn.disabled = false; }
+    finally { pararRelogio(); btn.disabled = false; }
   }
   $('#btn-ia-analise').onclick = gerarAnaliseIA;
 
