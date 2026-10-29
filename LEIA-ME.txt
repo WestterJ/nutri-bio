@@ -39,3 +39,9 @@ O manifest.webmanifest nao veio neste pacote: mantenha o arquivo que ja esta pub
 
 VERSAO V40
 Menu lateral (recolhivel; gaveta no celular), relatorio por periodo, cardio sem tempo visivel nos treinos, IA com novas tentativas automaticas, limite de tempo e botao Cancelar. Publique a pasta inteira (index.html, css/, js/, service-worker.js).
+
+VERSAO V42
+IA mais rapida e transparente: removidas as 3 tentativas automaticas (uma chamada por clique; se falhar, clique de novo); mantidos a contagem em segundos e o botao Cancelar; contagem tambem na leitura de PDF da bioimpedancia e no relatorio. Timeout de 30 s nas refeicoes. Raciocinio interno do Gemini desligado (IA_THINKING), prompt/schema enxutos e maxOutputTokens 900. Cada chamada de IA grava um log na tabela ia_logs (tipo, status, duracao, erro): rode SQL_IA_LOGS.sql no Supabase uma vez. Sem a tabela o app funciona normalmente, apenas nao grava o log. Publique a pasta inteira.
+
+V42 (ajuste da funcao dynamic-service, versao 9 no Supabase)
+Nova funcao com modo rapido "refeicao" (o app envia modo: 'refeicao'): 1 tentativa, 25 s, raciocinio interno desligado, sem retentativas por erro 5xx. O limite diario (60/24 h) so conta chamadas que deram certo. A funcao devolve o cabecalho Server-Timing e o app grava pre_ms e gemini_ms em ia_logs. Aviso de limite diario agora mostra a mensagem real. Codigo da funcao: supabase-functions/dynamic-service/index.ts.
