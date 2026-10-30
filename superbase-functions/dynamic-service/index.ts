@@ -1,7 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 // Secrets: GEMINI_API_KEY (obrigatório). Opcionais: GEMINI_MODEL, AI_DAILY_LIMIT (padrão 60), ALLOWED_ORIGIN (padrão *),
-// GEMINI_THINKING_BUDGET (raciocínio interno dos demais modos; o modo "refeicao" sempre usa 0).
+// GEMINI_THINKING_BUDGET (raciocínio interno dos demais modos; o modo "refeicao" sempre usa 0),
+// GEMINI_MODEL_FALLBACK (modelo reserva do modo "refeicao"; padrão gemini-3.1-flash-lite; "off" desativa).
 const corsHeaders = {
   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -19,6 +20,9 @@ const BUDGET_MS = 125000;
 // Modo rápido (refeição por texto/foto): uma única tentativa, tempo curto, sem novas tentativas por erro 5xx.
 // Fica abaixo do tempo limite do app (30 s) para o erro chegar com mensagem clara.
 const TIMEOUT_RAPIDO_MS = 25000;
+// No modo rápido, se o modelo principal não responder neste tempo (ou der 404/429/500/503/504), a função tenta o modelo reserva.
+const TIMEOUT_PRIMARIO_MS = 12000;
+const ehTimeout = (e: unknown) => ['TimeoutError', 'AbortError'].includes((e as Error)?.name);
 // Modos de texto longo (sem anexos): limite de entrada (caracteres), de saída (tokens) e temperatura.
 // Modo com imagem: true aceita também anexos de imagem (texto curto + até 1 imagem), com saída maior.
 const MODOS: Record<string, { texto: number; tokens: number; temp: number; imagem?: boolean; rapido?: boolean }> = {
@@ -84,14 +88,21 @@ Deno.serve(async (req: Request) => {
     const timeoutMs = rapido ? TIMEOUT_RAPIDO_MS : TIMEOUT_MS;
     const budgetMs = rapido ? TIMEOUT_RAPIDO_MS + 3000 : BUDGET_MS;
     const model = Deno.env.get('GEMINI_MODEL') || 'gemini-3.8-flash';
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
-    const chamar = (generationConfig: unknown, systemInstruction: unknown) => fetch(apiUrl, {
+    const reservaEnv = Deno.env.get('GEMINI_MODEL_FALLBACK') ?? 'gemini-3.1-flash-lite';
+    const reserva = rapido && reservaEnv && reservaEnv.toLowerCase() !== 'off' && reservaEnv !== model ? reservaEnv : null;
+    let modeloUsado = model;
+    let motivo = '';
+    // Server-Timing: pre = login + limite; gemini = tempo no Gemini; modelo = quem respondeu; reserva = por que o modelo reserva entrou.
+    const tm = (gemMs?: number) => `pre;dur=${preMs}` + (gemMs !== undefined ? `, gemini;dur=${gemMs}` : '') + `, modelo;desc=${modeloUsado}` + (motivo ? `, reserva;desc=${motivo}` : '');
+    timing = tm();
+    const chamar = (m: string, generationConfig: unknown, systemInstruction: unknown, limiteMs: number) => fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, // chave no cabeçalho, não na URL
-      signal: AbortSignal.timeout(Math.max(5000, Math.min(timeoutMs, budgetMs - (Date.now() - inicio)))),
+      signal: AbortSignal.timeout(Math.max(3000, Math.min(limiteMs, budgetMs - (Date.now() - inicio)))),
       body: JSON.stringify({ systemInstruction, contents: body.contents, generationConfig }),
     });
-    // Alta demanda (500/503/504): até 2 novas tentativas, desde que reste tempo no orçamento. No modo rápido não há novas tentativas.
+    // Alta demanda (500/503/504): até 2 novas tentativas, desde que reste tempo no orçamento. No modo rápido não há novas tentativas (há o modelo reserva).
     const esperas = rapido ? [] : [1500, 4000];
     const comRetry = async (fn: () => Promise<Response>) => {
       let r = await fn();
@@ -109,33 +120,48 @@ Deno.serve(async (req: Request) => {
     const thinkingConfig = rapido ? { thinkingBudget: 0 } : (thinkingEnv ? { thinkingBudget: Number(thinkingEnv) } : null);
     const cfg: Record<string, unknown> = { responseMimeType: 'application/json', responseSchema: body.generationConfig.responseSchema, temperature: modo?.temp ?? 0.2, maxOutputTokens: modo?.tokens ?? 1800,
       ...(thinkingConfig ? { thinkingConfig } : {}) };
-
-    let resp = await comRetry(() => chamar(cfg, body.systemInstruction));
-    if (resp.status === 400 && cfg.thinkingConfig) { // o modelo pode não aceitar desligar o raciocínio: tenta uma vez sem esse ajuste
-      const t400 = await resp.clone().text();
-      if (/thinking/i.test(t400)) {
-        const { thinkingConfig: _ignorado, ...semThinking } = cfg;
-        resp = await comRetry(() => chamar(semThinking, body.systemInstruction));
+    const executar = async (m: string, limiteMs: number) => {
+      let r = await comRetry(() => chamar(m, cfg, body.systemInstruction, limiteMs));
+      if (r.status === 400 && cfg.thinkingConfig) { // o modelo pode não aceitar desligar o raciocínio: tenta uma vez sem esse ajuste
+        const t400 = await r.clone().text();
+        if (/thinking/i.test(t400)) {
+          const { thinkingConfig: _ignorado, ...semThinking } = cfg;
+          r = await comRetry(() => chamar(m, semThinking, body.systemInstruction, limiteMs));
+        }
       }
+      if (r.status === 400) { // alguns modelos rejeitam o esquema: tenta uma vez só com instrução textual
+        const extra = ' Responda somente com JSON válido que siga este esquema: ' + JSON.stringify(body.generationConfig.responseSchema);
+        r = await comRetry(() => chamar(m, { ...cfg, responseSchema: undefined }, { parts: [{ text: body.systemInstruction.parts[0].text + extra }] }, limiteMs));
+      }
+      return r;
+    };
+
+    let resp: Response | null = null;
+    try { resp = await executar(model, reserva ? TIMEOUT_PRIMARIO_MS : timeoutMs); }
+    catch (e) { if (!reserva || !ehTimeout(e)) throw e; motivo = 'timeout'; }
+    if (reserva && (!resp || [404, 429, 500, 503, 504].includes(resp.status))) { // principal sem resposta: tenta o modelo reserva
+      motivo = motivo || String(resp!.status);
+      await resp?.body?.cancel();
+      console.warn(JSON.stringify({ aviso: 'modelo principal falhou, usando reserva', principal: model, reserva, motivo, ms: Date.now() - inicio }));
+      modeloUsado = reserva;
+      timing = tm();
+      resp = await executar(reserva, timeoutMs);
     }
-    if (resp.status === 400) { // alguns modelos rejeitam o esquema: tenta uma vez só com instrução textual
-      const extra = ' Responda somente com JSON válido que siga este esquema: ' + JSON.stringify(body.generationConfig.responseSchema);
-      resp = await comRetry(() => chamar({ ...cfg, responseSchema: undefined }, { parts: [{ text: body.systemInstruction.parts[0].text + extra }] }));
-    }
-    const texto = await resp.text();
+    const respFinal = resp as Response;
+    const texto = await respFinal.text();
     const geminiMs = Date.now() - inicio;
-    timing = `pre;dur=${preMs}, gemini;dur=${geminiMs}`;
-    console.log(JSON.stringify({ modo: nomeModo || '-', status: resp.status, pre_ms: preMs, gemini_ms: geminiMs }));
-    if (!resp.ok) {
-      console.error('Gemini HTTP', resp.status, texto.slice(0, 300));
-      let msg = `Gemini retornou HTTP ${resp.status}.`;
+    timing = tm(geminiMs);
+    console.log(JSON.stringify({ modo: nomeModo || '-', status: respFinal.status, modelo: modeloUsado, reserva: motivo || null, pre_ms: preMs, gemini_ms: geminiMs }));
+    if (!respFinal.ok) {
+      console.error('Gemini HTTP', respFinal.status, modeloUsado, texto.slice(0, 300));
+      let msg = `Gemini retornou HTTP ${respFinal.status}.`;
       try { msg = JSON.parse(texto)?.error?.message || msg; } catch { /* mantém a mensagem padrão */ }
-      return json({ error: msg }, resp.status >= 500 ? 502 : resp.status, timing);
+      return json({ error: msg }, respFinal.status >= 500 ? 502 : respFinal.status, timing);
     }
     if (!cErr) await sb.from('ai_usage').insert({ user_id: user.id });
     try { return json(JSON.parse(texto), 200, timing); } catch { return json({ error: 'Resposta inválida recebida do Gemini.' }, 502, timing); }
   } catch (e) {
-    if ((e as Error)?.name === 'TimeoutError' || (e as Error)?.name === 'AbortError') return json({ error: 'A IA demorou demais para responder. Tente novamente em instantes ou com um arquivo menor.' }, 504, timing);
+    if (ehTimeout(e)) return json({ error: 'A IA demorou demais para responder. Tente novamente em instantes ou com um arquivo menor.' }, 504, timing);
     console.error('nutri-gemini error:', e);
     return json({ error: 'Não foi possível processar a solicitação de IA.' }, 500, timing);
   }
