@@ -5,6 +5,7 @@
     const pill = $('#btn-cloud-status');
     const icon = $('#cloud-status-icon');
     const text = $('#cloud-status-text');
+    const timeEl = $('#cloud-status-time'); timeEl.textContent = '';
     
     if (cloudProvider === 'supabase') {
       const labels = {
@@ -14,13 +15,13 @@
         idle: ['bg-emerald-700 border-emerald-500', '☁️', '']
       };
       const current = labels[supabaseSyncUiState] || labels.idle;
-      pill.className = 'text-xs px-3 py-1.5 rounded-full text-white border font-medium truncate max-w-[260px] flex items-center gap-1 shadow-sm transition-all ' + current[0];
+      pill.className = 'text-xs px-3 py-1 rounded-full text-white border font-medium whitespace-nowrap shrink-0 flex items-center gap-1.5 shadow-sm transition-all ' + current[0];
       icon.textContent = current[1];
       let lastSync = supabaseLastRemoteUpdatedAt || localStorage.getItem('nutri_last_successful_sync') || '';
       if (lastSync && !Number.isNaN(Date.parse(lastSync))) {
         const d = new Date(lastSync);
         const dateTime = d.toLocaleDateString('pt-BR') + ', ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
-        text.textContent = current[2] || ('Nuvem · ' + dateTime);
+        text.textContent = current[2] || 'Nuvem'; timeEl.textContent = current[2] ? '' : dateTime; // data e hora numa segunda linha (cabe no celular)
       } else {
         text.textContent = current[2] || (supabaseUser ? 'Nuvem conectada' : 'Nuvem');
       }
@@ -30,16 +31,16 @@
       return;
     }
     if (cloudProvider === 'apps-script') {
-      pill.className = "text-xs px-3 py-1.5 rounded-full bg-emerald-700 text-white border border-emerald-500 font-medium truncate max-w-[210px] flex items-center gap-1 shadow-sm transition-all hover:bg-emerald-600";
+      pill.className = "text-xs px-3 py-1 rounded-full bg-emerald-700 text-white border border-emerald-500 font-medium whitespace-nowrap shrink-0 flex items-center gap-1.5 shadow-sm transition-all hover:bg-emerald-600";
       icon.textContent = "☁️"; text.textContent = "Google Drive (Apps Script)";
     } else if (cloudProvider === 'google') {
-      pill.className = "text-xs px-3 py-1.5 rounded-full bg-sky-700 text-white border border-sky-500 font-medium truncate max-w-[210px] flex items-center gap-1 shadow-sm transition-all hover:bg-sky-600";
+      pill.className = "text-xs px-3 py-1 rounded-full bg-sky-700 text-white border border-sky-500 font-medium whitespace-nowrap shrink-0 flex items-center gap-1.5 shadow-sm transition-all hover:bg-sky-600";
       icon.textContent = "☁️"; text.textContent = "Google Drive (/apps/dados)";
     } else if (cloudProvider === 'onedrive') {
-      pill.className = "text-xs px-3 py-1.5 rounded-full bg-blue-700 text-white border border-blue-500 font-medium truncate max-w-[210px] flex items-center gap-1 shadow-sm transition-all hover:bg-blue-600";
+      pill.className = "text-xs px-3 py-1 rounded-full bg-blue-700 text-white border border-blue-500 font-medium whitespace-nowrap shrink-0 flex items-center gap-1.5 shadow-sm transition-all hover:bg-blue-600";
       icon.textContent = "☁️"; text.textContent = "OneDrive (/apps/dados)";
     } else {
-      pill.className = "text-xs px-3 py-1.5 rounded-full bg-amber-600 text-white border border-amber-500 font-medium truncate max-w-[210px] flex items-center gap-1 shadow-sm transition-all hover:bg-amber-500";
+      pill.className = "text-xs px-3 py-1 rounded-full bg-amber-600 text-white border border-amber-500 font-medium whitespace-nowrap shrink-0 flex items-center gap-1.5 shadow-sm transition-all hover:bg-amber-500";
       icon.textContent = "💾"; text.textContent = "Armazenamento Local";
     }
   }
