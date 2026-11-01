@@ -179,7 +179,7 @@
     const desde = d => { const x = new Date(); x.setDate(x.getDate() - d + 1); return `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDate())}`; };
     const resumo = d => { const l = desde(d), s = state.treinos.filter(t => t.data >= l && t.data <= hoje); return { n: s.length, min: s.reduce((a, t) => a + t.minMusc + t.minCardio, 0), kcal: s.reduce((a, t) => a + t.kcal, 0) }; };
     const r7 = resumo(7), r30 = resumo(30);
-    const card = (t, v, s) => `<div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm"><div class="text-[11px] text-slate-500 uppercase font-semibold">${t}</div><div class="text-xl font-bold text-slate-800">${v}</div><div class="text-[11px] text-slate-500">${s}</div></div>`;
+    const card = (t, v, s) => `<div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm"><div class="text-xs text-slate-600 uppercase font-semibold">${t}</div><div class="text-xl font-bold text-slate-800">${v}</div><div class="text-xs text-slate-600">${s}</div></div>`;
     $('#treinos-resumo').innerHTML = card('Sessões (7 dias)', r7.n, `${fmtNum(r7.min)} min`) + card('Kcal (7 dias)', fmtNum(r7.kcal), 'estimadas') + card('Sessões (30 dias)', r30.n, `${fmtNum(r30.min)} min`) + card('Kcal por sessão', r30.n ? fmtNum(Math.round(r30.kcal / r30.n)) : '–', 'média de 30 dias');
 
     const rows = treinosFiltrados();

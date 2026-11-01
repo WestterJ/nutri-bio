@@ -83,22 +83,22 @@
 
     $('#kpi-cards').innerHTML = `
       <div class="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm border-l-4 border-l-[#003a70]">
-        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Lançamentos no Período</span>
+        <span class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Lançamentos no Período</span>
         <div class="text-2xl font-bold text-slate-800 mt-1">${totalReg}</div>
         <span class="text-xs text-emerald-600 font-medium">Refeições registradas</span>
       </div>
       <div class="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm border-l-4 border-l-[#ffc20e]">
-        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Média Calorias / Dia</span>
+        <span class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Média Calorias / Dia</span>
         <div class="text-2xl font-bold text-slate-800 mt-1">${mediaCal} <span class="text-sm font-normal text-slate-500">kcal</span></div>
         <span class="text-xs text-amber-600 font-medium">Meta: ${state.metas.calorias} kcal/dia</span>
       </div>
       <div class="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm border-l-4 border-l-[#0a5cad]">
-        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Média Proteínas / Dia</span>
+        <span class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Média Proteínas / Dia</span>
         <div class="text-2xl font-bold text-slate-800 mt-1">${mediaPro} <span class="text-sm font-normal text-slate-500">g</span></div>
         <span class="text-xs text-sky-700 font-medium">Meta: ${state.metas.proteinas} g/dia</span>
       </div>
       <div class="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm border-l-4 border-l-blue-600">
-        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Média Água / Dia</span>
+        <span class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Média Água / Dia</span>
         <div class="text-2xl font-bold text-slate-800 mt-1">${mediaAgua} <span class="text-sm font-normal text-slate-500">ml</span></div>
         <span class="text-xs text-blue-600 font-medium">Meta: ${state.metas.agua} ml/dia</span>
       </div>
@@ -130,7 +130,7 @@
       $('#contador-poucas-refeicoes').textContent = new Set(doPeriodo.map(r => r.data).filter(d => diaIncompleto(c, d))).size; }
 
     if (filtered.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="10" class="text-center py-12 text-slate-400">${$('#filtro-poucas-refeicoes').checked ? 'Nenhum dia com menos de 4 refeições neste período. 🎉' : $('#filtro-sem-estimativa').checked ? 'Nenhuma refeição sem estimativa neste período. 🎉' : 'Nenhum registro encontrado no período.'}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10" class="text-center py-12 text-slate-600">${$('#filtro-poucas-refeicoes').checked ? 'Nenhum dia com menos de 4 refeições neste período. 🎉' : $('#filtro-sem-estimativa').checked ? 'Nenhuma refeição sem estimativa neste período. 🎉' : 'Nenhum registro encontrado no período.'}</td></tr>`;
       return;
     }
 
@@ -164,10 +164,11 @@
     $('#reg-id').value = '';
     $('#reg-data').value = hojeLocal();
     $('#reg-refeicao').value = proximaRefeicao($('#reg-data').value);
-    modalReg.dataset.auto = '1';
+    modalReg.dataset.auto = '1'; modalReg.dataset.atalhos = '1';
     $('#reg-alimentos').value = ''; $('#reg-calorias').value = '';
     $('#reg-proteinas').value = ''; $('#reg-carboidratos').value = '';
     $('#reg-gorduras').value = ''; $('#reg-agua').value = ''; $('#reg-obs').value = '';
+    atualizarAtalhosRefeicao();
     modalReg.showModal();
   };
 
@@ -185,6 +186,7 @@
     $('#reg-gorduras').value = r.gorduras ?? '';
     $('#reg-agua').value = r.agua ?? ''; 
     $('#reg-obs').value = r.obs || '';
+    atualizarAtalhosRefeicao();
     modalReg.showModal();
   };
 
@@ -202,6 +204,7 @@
     $('#reg-gorduras').value = r.gorduras ?? '';
     $('#reg-agua').value = r.agua ?? ''; 
     $('#reg-obs').value = (r.obs ? r.obs + " (Cópia)" : "");
+    atualizarAtalhosRefeicao();
     modalReg.showModal();
     showToast("Refeição copiada!");
   };
@@ -213,13 +216,81 @@
     });
   };
 
+
+  // ---------- V43: atalhos de lançamento (repetir refeição anterior e favoritas) ----------
+  const MAX_FAVORITOS = 12;
+  function garantirFavoritos() {
+    if (!Array.isArray(state.favoritos)) state.favoritos = [];
+    state.favoritos = state.favoritos.filter(f => f && String(f.alimentos || '').trim()).slice(0, MAX_FAVORITOS);
+    state.favoritos.forEach(f => {
+      f.id = String(f.id || ('f_' + Math.random().toString(36).slice(2)));
+      f.alimentos = String(f.alimentos).slice(0, 500); f.obs = String(f.obs || '').slice(0, 200);
+      ['calorias', 'proteinas', 'carboidratos', 'gorduras', 'agua'].forEach(k => { f[k] = Number(f[k]) || 0; });
+    });
+  }
+  const diaAnterior = iso => { const x = new Date(iso + 'T00:00:00'); x.setDate(x.getDate() - 1); return `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDate())}`; };
+  // Refeição a repetir: a mesma refeição (ex.: Almoço) do dia anterior; sem ela, a última vez em que essa refeição foi lançada.
+  function refeicaoParaRepetir() {
+    const data = $('#reg-data').value, ref = $('#reg-refeicao').value;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return null;
+    const mesma = state.registros.filter(r => r.refeicao === ref && r.data < data && String(r.alimentos || '').trim());
+    if (!mesma.length) return null;
+    const ontem = diaAnterior(data), doOntem = mesma.find(r => r.data === ontem);
+    if (doOntem) return { r: doOntem, rotulo: 'Repetir de ontem · ' + ref };
+    const ultima = mesma.reduce((a, b) => (b.data > a.data ? b : a));
+    return { r: ultima, rotulo: `Repetir a última vez · ${ref} (${fmtDataBr(ultima.data)})` };
+  }
+  let refeicaoRepetirAtual = null;
+  const macrosTxt = r => `${fmtNum(Math.round(r.calorias || 0))} kcal · P ${fmtNum(Math.round(r.proteinas || 0))} g · C ${fmtNum(Math.round(r.carboidratos || 0))} g · G ${fmtNum(Math.round(r.gorduras || 0))} g`;
+  function atualizarAtalhosRefeicao() {
+    garantirFavoritos();
+    const novo = modalReg.dataset.atalhos === '1';
+    refeicaoRepetirAtual = novo ? refeicaoParaRepetir() : null;
+    $('#atalho-repetir').classList.toggle('hidden', !refeicaoRepetirAtual);
+    if (refeicaoRepetirAtual) {
+      const r = refeicaoRepetirAtual.r, desc = String(r.alimentos).trim();
+      $('#atalho-repetir-titulo').textContent = refeicaoRepetirAtual.rotulo;
+      $('#atalho-repetir-desc').textContent = desc.length > 90 ? desc.slice(0, 90) + '…' : desc;
+      $('#atalho-repetir-macros').textContent = macrosTxt(r);
+    }
+    $('#atalho-favs').classList.toggle('hidden', !novo || !state.favoritos.length);
+    $('#lista-favoritos').innerHTML = state.favoritos.map(f => {
+      const nome = f.alimentos.length > 28 ? f.alimentos.slice(0, 28) + '…' : f.alimentos;
+      return `<span class="inline-flex items-center border border-slate-400 bg-white rounded-full overflow-hidden"><button type="button" class="fav-usar px-3 min-h-[44px] text-sm text-slate-800 hover:bg-sky-50" data-id="${esc(f.id)}" title="${esc(f.alimentos)} · ${esc(macrosTxt(f))}">★ ${esc(nome)}</button><button type="button" class="fav-remover px-3 min-h-[44px] text-slate-600 hover:bg-red-50 hover:text-red-700 border-l border-slate-300" data-id="${esc(f.id)}" aria-label="Remover favorito ${esc(nome)}">×</button></span>`;
+    }).join('');
+  }
+  function aplicarModeloRefeicao(m, aviso) {
+    $('#reg-alimentos').value = m.alimentos || '';
+    $('#reg-calorias').value = m.calorias || ''; $('#reg-proteinas').value = m.proteinas || '';
+    $('#reg-carboidratos').value = m.carboidratos || ''; $('#reg-gorduras').value = m.gorduras || '';
+    $('#reg-agua').value = m.agua || ''; $('#reg-obs').value = m.obs || '';
+    showToast(aviso);
+  }
+  $('#btn-repetir-refeicao').onclick = () => { if (refeicaoRepetirAtual) aplicarModeloRefeicao(refeicaoRepetirAtual.r, 'Refeição repetida. Confira e salve.'); };
+  $('#lista-favoritos').addEventListener('click', e => {
+    const b = e.target.closest('button[data-id]'); if (!b) return;
+    const f = state.favoritos.find(x => x.id === b.dataset.id); if (!f) return;
+    if (b.classList.contains('fav-usar')) aplicarModeloRefeicao(f, 'Favorita aplicada. Confira e salve.');
+    else customConfirm('Remover favorito', 'Remover esta refeição dos favoritos? Os lançamentos já feitos não mudam.', () => { state.favoritos = state.favoritos.filter(x => x.id !== f.id); saveCloud(); atualizarAtalhosRefeicao(); showToast('Favorito removido.'); }, 'Remover');
+  });
+  $('#btn-fav-salvar').onclick = () => {
+    garantirFavoritos();
+    const alimentos = $('#reg-alimentos').value.trim();
+    if (!alimentos) { showToast('Descreva os alimentos antes de salvar como favorita.'); return; }
+    if (state.favoritos.some(f => f.alimentos.toLowerCase() === alimentos.toLowerCase())) { showToast('Esta refeição já está nos favoritos.'); return; }
+    if (state.favoritos.length >= MAX_FAVORITOS) { showToast(`Limite de ${MAX_FAVORITOS} favoritos. Remova um para salvar outro.`); return; }
+    const n = k => parseFloat($('#reg-' + k).value) || 0;
+    state.favoritos.push({ id: 'f_' + Date.now(), alimentos, calorias: n('calorias'), proteinas: n('proteinas'), carboidratos: n('carboidratos'), gorduras: n('gorduras'), agua: n('agua'), obs: $('#reg-obs').value.trim() });
+    saveCloud(); atualizarAtalhosRefeicao(); showToast('Salva nos favoritos!');
+  };
+
   $('#modal-close').onclick = () => modalReg.close();
   $('#modal-cancel').onclick = () => modalReg.close();
   $('#btn-novo-registro').onclick = () => abrirModalNovo();
   // Novo lançamento: ao trocar a data, sugere a refeição que falta naquele dia (até o usuário escolher manualmente).
-  $('#reg-data').addEventListener('change', () => { if (modalReg.dataset.auto === '1' && !$('#reg-id').value) $('#reg-refeicao').value = proximaRefeicao($('#reg-data').value); });
-  $('#reg-refeicao').addEventListener('change', () => { delete modalReg.dataset.auto; });
-  modalReg.addEventListener('close', () => { delete modalReg.dataset.auto; });
+  $('#reg-data').addEventListener('change', () => { if (modalReg.dataset.auto === '1' && !$('#reg-id').value) $('#reg-refeicao').value = proximaRefeicao($('#reg-data').value); atualizarAtalhosRefeicao(); });
+  $('#reg-refeicao').addEventListener('change', () => { delete modalReg.dataset.auto; atualizarAtalhosRefeicao(); });
+  modalReg.addEventListener('close', () => { delete modalReg.dataset.auto; delete modalReg.dataset.atalhos; });
 
   $('#form-registro').onsubmit = e => {
     e.preventDefault();

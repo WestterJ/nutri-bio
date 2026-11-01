@@ -19,7 +19,7 @@
     const diasPer = isNaN(dias) ? Math.round((new Date(hojeS + 'T00:00:00') - new Date(primeira + 'T00:00:00')) / 864e5) + 1 : dias;
     const semanas = Math.max(1, diasPer / 7);
     const hm = m => m >= 60 ? `${Math.floor(m / 60)}h${pad(m % 60)}` : `${m} min`;
-    const card = (t, v, s) => `<div class="bg-slate-50 p-3 rounded-lg border text-center"><span class="text-xs text-slate-500">${t}</span><div class="text-lg font-bold">${v}</div><div class="text-[11px] text-slate-500">${s}</div></div>`;
+    const card = (t, v, s) => `<div class="bg-slate-50 p-3 rounded-lg border text-center"><span class="text-xs text-slate-500">${t}</span><div class="text-lg font-bold">${v}</div><div class="text-xs text-slate-600">${s}</div></div>`;
     const kpis = card('Sessões', n, `${new Set(ts.map(t => t.data)).size} dias treinados`) + card('Sessões / semana', dec(n / semanas), 'média do período') + card('Tempo total', hm(minTot), `cardio: ${hm(minCard)}`) + card('Kcal / sessão', fmtNum(Math.round(kcal / n)), 'média') + card('Kcal / semana', fmtNum(Math.round(kcal / semanas)), 'média');
     const seg = x => { const d = new Date(x + 'T00:00:00'); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return ds(d); };
     const nSem = Math.min(12, Math.ceil(diasPer / 7) + 1), cont = {};
@@ -47,7 +47,7 @@
       <div><div class="text-xs font-semibold text-slate-600 mb-1">Sessões por semana (últimas ${nSem} semanas, mais recente no topo) · <span class="font-normal text-slate-500">tracejado = média de ${dec(mediaS)}/semana · ● semana atual</span></div><div class="space-y-1" style="-webkit-print-color-adjust:exact;print-color-adjust:exact">${barras}</div></div>
       <div class="overflow-x-auto">${cab('Mês')}${meses}</tbody></table></div>
       ${anos ? `<div class="overflow-x-auto">${cab('Ano')}${anos}</tbody></table></div>` : ''}
-      <p class="text-[11px] text-slate-500">Calorias estimadas por MET × peso, sem contar o repouso (margem de 20–30%).${manuais ? ` ${manuais} sessão(ões) com valores informados manualmente.` : ''}</p>`;
+      <p class="text-xs text-slate-600">Calorias estimadas por MET × peso, sem contar o repouso (margem de 20–30%).${manuais ? ` ${manuais} sessão(ões) com valores informados manualmente.` : ''}</p>`;
   }
 
   function renderRelatorio() {
@@ -101,7 +101,7 @@
         <td class="p-2 border text-center text-amber-700">${fmtNum(r.carboidratos)}</td>
         <td class="p-2 border text-center text-rose-700">${fmtNum(r.gorduras)}</td>
       </tr>
-    `).join('') : `<tr><td colspan="7" class="p-3 text-center text-slate-400">Nenhuma refeição registrada no período.</td></tr>`;
+    `).join('') : `<tr><td colspan="7" class="p-3 text-center text-slate-600">Nenhuma refeição registrada no período.</td></tr>`;
 
     const sortedBio = [...state.bio].sort((a,b) => new Date(b.data) - new Date(a.data));
     $('#rel-tabela-bio').innerHTML = sortedBio.length ? sortedBio.map(b => `
@@ -114,7 +114,7 @@
         <td class="p-2 border text-center">${fmtNum(b.gordVisc)}</td>
         <td class="p-2 border text-center">${fmtNum(b.tmb)} kcal</td>
       </tr>
-    `).join('') : `<tr><td colspan="7" class="p-3 text-center text-slate-400">Nenhuma bioimpedância.</td></tr>`;
+    `).join('') : `<tr><td colspan="7" class="p-3 text-center text-slate-600">Nenhuma bioimpedância.</td></tr>`;
 
     // O canvas principal fica dentro de uma aba oculta e pode ter tamanho 0x0.
     // Os gráficos do relatório são renderizados diretamente em canvases próprios.

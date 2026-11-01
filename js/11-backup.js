@@ -18,10 +18,10 @@
         const parsed = JSON.parse(evt.target.result);
         const idOk = x => x && (x.id == null || /^[\w-]+$/.test(String(x.id)));
         const lista = k => parsed[k] === undefined || (Array.isArray(parsed[k]) && parsed[k].every(idOk));
-        const ok = parsed && Array.isArray(parsed.registros) && parsed.registros.every(r => idOk(r) && /^\d{4}-\d{2}-\d{2}$/.test(String(r.data || ''))) && lista('medidas') && lista('bio') && lista('treinos');
+        const ok = parsed && Array.isArray(parsed.registros) && parsed.registros.every(r => idOk(r) && /^\d{4}-\d{2}-\d{2}$/.test(String(r.data || ''))) && lista('medidas') && lista('bio') && lista('treinos') && lista('favoritos');
         if (!ok) { showToast('Arquivo inválido: confira registros, medidas, bio e datas (AAAA-MM-DD).'); return; }
         customConfirm('Importar backup', `Substituir os dados atuais por ${parsed.registros.length} registros do arquivo?`, () => {
-          state = { registros: parsed.registros, medidas: parsed.medidas || [], bio: parsed.bio || [], treinos: parsed.treinos || [], metas: parsed.metas || defaultMetas };
+          state = { registros: parsed.registros, medidas: parsed.medidas || [], bio: parsed.bio || [], treinos: parsed.treinos || [], favoritos: parsed.favoritos || [], metas: parsed.metas || defaultMetas };
           saveCloud(); refreshAll(); showToast('Backup importado!');
         }, 'Importar', 'bg-blue-700 hover:bg-blue-800 text-white');
       } catch(err) { showToast("Erro no arquivo."); }

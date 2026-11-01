@@ -74,11 +74,11 @@
   }
   async function carregarHistoricoAnalises() {
     const box = $('#ia-historico'); if (!box) return;
-    if (!supabaseClient || !supabaseUser) { box.innerHTML = '<p class="text-xs text-slate-400">Entre na sua conta para ver o histórico.</p>'; return; }
+    if (!supabaseClient || !supabaseUser) { box.innerHTML = '<p class="text-xs text-slate-600">Entre na sua conta para ver o histórico.</p>'; return; }
     const { data, error } = await supabaseClient.from('ia_analises').select('id,created_at,periodo_dias,resultado,dados').eq('user_id', supabaseUser.id).order('created_at', { ascending: false }).limit(50);
     if (error) { box.innerHTML = '<p class="text-xs text-red-600">Não foi possível carregar o histórico (a tabela ia_analises existe no Supabase?).</p>'; return; }
     iaHistorico = data || [];
-    if (!iaHistorico.length) { box.innerHTML = '<p class="text-xs text-slate-400">Nenhuma análise salva ainda.</p>'; return; }
+    if (!iaHistorico.length) { box.innerHTML = '<p class="text-xs text-slate-600">Nenhuma análise salva ainda.</p>'; return; }
     box.innerHTML = iaHistorico.map(h => `<div class="flex items-start gap-2 border border-slate-200 rounded-lg p-2">
       <button type="button" class="flex-1 text-left" onclick="window.abrirAnaliseIA('${h.id}')">
         <div class="text-xs font-semibold text-sky-800">${esc(new Date(h.created_at).toLocaleString('pt-BR'))} · últimos ${h.periodo_dias} dias</div>

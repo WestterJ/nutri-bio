@@ -12,8 +12,8 @@
       data: {
         labels: labelsBio,
         datasets: [
-          { label: 'Peso (kg)', data: bioOrd.map(b => b.peso), borderColor: '#003a70', tension: 0.2 },
-          { label: 'Gordura (kg)', data: bioOrd.map(b => b.massaGord), borderColor: '#d13a46', tension: 0.2 }
+          { label: 'Peso (kg)', data: bioOrd.map(b => b.peso), borderColor: corGraf('#003a70'), tension: 0.2 },
+          { label: 'Gordura (kg)', data: bioOrd.map(b => b.massaGord), borderColor: corGraf('#d13a46'), tension: 0.2 }
         ]
       },
       options: { responsive: true, maintainAspectRatio: false }
@@ -25,8 +25,8 @@
       data: {
         labels: labelsBio,
         datasets: [
-          { label: 'Massa Muscular (kg)', data: bioOrd.map(b => b.massaMusc), borderColor: '#2e9e4f', tension: 0.2 },
-          { label: 'Água (L)', data: bioOrd.map(b => b.agua), borderColor: '#0a5cad', tension: 0.2 }
+          { label: 'Massa Muscular (kg)', data: bioOrd.map(b => b.massaMusc), borderColor: corGraf('#2e9e4f'), tension: 0.2 },
+          { label: 'Água (L)', data: bioOrd.map(b => b.agua), borderColor: corGraf('#0a5cad'), tension: 0.2 }
         ]
       },
       options: { responsive: true, maintainAspectRatio: false }
@@ -50,8 +50,8 @@
       data: {
         labels: mesesKeys.map(mk => { const [a,m]=mk.split("-"); return `${m}/${a}`; }),
         datasets: [
-          { label: 'Calorias (kcal)', data: medCal, backgroundColor: '#ffc20e' },
-          { label: 'Proteínas (g)', data: medProt, backgroundColor: '#2e9e4f' }
+          { label: 'Calorias (kcal)', data: medCal, backgroundColor: corGraf('#ffc20e') },
+          { label: 'Proteínas (g)', data: medProt, backgroundColor: corGraf('#2e9e4f') }
         ]
       },
       options: { responsive: true, maintainAspectRatio: false }
@@ -62,7 +62,7 @@
       type: 'line',
       data: {
         labels: labelsBio,
-        datasets: [{ label: 'TMB (kcal)', data: bioOrd.map(b => b.tmb), borderColor: '#e0a800', fill: true, backgroundColor: '#fff8e6', tension: 0.2 }]
+        datasets: [{ label: 'TMB (kcal)', data: bioOrd.map(b => b.tmb), borderColor: corGraf('#e0a800'), fill: true, backgroundColor: corGraf('#fff8e6'), tension: 0.2 }]
       },
       options: { responsive: true, maintainAspectRatio: false }
     });
