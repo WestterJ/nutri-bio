@@ -4,7 +4,7 @@
   <!-- Diário Nutricional V40: menu lateral, relatório por período, cardio sem tempo, IA com novas tentativas (V42: uma chamada só, contagem em segundos e log ia_logs). Ver ARQUITETURA.md. -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Diário Nutricional V44</title>
+<title>Diário Nutricional V45</title>
 <script>try{var t=localStorage.getItem('nutri_tema');if(t==='escuro'||((!t||t==='auto')&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}</script>
 <meta name="color-scheme" content="light dark">
 <script src="https://cdn.tailwindcss.com"></script>
@@ -56,13 +56,13 @@
       <div class="bg-white text-[#003a70] p-2 rounded-xl font-bold text-xl shadow-inner">🥗</div>
       <div class="min-w-0">
         <h1 class="text-base md:text-xl font-bold tracking-tight truncate">Diário Nutricional & Bioimpedância</h1>
-        <small class="text-emerald-100 opacity-90 text-xs">Versão V44</small>
+        <small class="text-emerald-100 opacity-90 text-xs">Versão V45</small>
       </div>
     </div>
     <div class="flex items-center gap-2 min-w-0">
     <button type="button" id="btn-tema" class="shrink-0 w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 text-white text-lg flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#ffc20e]" aria-label="Tema: automático" title="Tema: automático">◐</button>
-    <button id="btn-cloud-status" class="text-xs px-3 py-1.5 rounded-full bg-amber-600 text-white border border-amber-500 font-medium truncate max-w-[210px] flex items-center gap-1 shadow-sm transition-all hover:bg-amber-500" title="Clique para sincronizar agora com a nuvem">
-      <span id="cloud-status-icon">☁️</span> <span id="cloud-status-text">Nuvem · aguardando sincronização</span>
+    <button id="btn-cloud-status" class="text-xs px-3 py-1 rounded-full bg-amber-600 text-white border border-amber-500 font-medium whitespace-nowrap shrink-0 flex items-center gap-1.5 shadow-sm transition-all hover:bg-amber-500" title="Clique para sincronizar agora com a nuvem">
+      <span id="cloud-status-icon">☁️</span><span class="flex flex-col text-left leading-tight"><span id="cloud-status-text">Nuvem</span><span id="cloud-status-time" class="text-xs opacity-90">aguardando sincronização</span></span>
     </button>
     </div>
   </div>

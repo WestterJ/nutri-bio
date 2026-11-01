@@ -63,3 +63,4 @@ Indique o arquivo ou a área: "Em `04-diario.js`, …" ou "Na aba Treinos, …".
 | V42 | IA: uma chamada por clique (sem novas tentativas), timeout, contagem em segundos e Cancelar; log `ia_logs` (`SQL_IA_LOGS.sql`); função `dynamic-service` com modelo reserva. |
 | V43 | Textos de apoio com contraste mínimo de 4,5:1 e fonte mínima de 12 px; atalhos de lançamento no modal de refeição (repetir refeição anterior e favoritas em `state.favoritos`). |
 | V44 | Tema escuro (automático, claro ou escuro) com botão no cabeçalho; as regras `html.dark` ficam em `css/app.css` e só valem na tela, a impressão do relatório continua clara. |
+| V45 | Cabeçalho no celular: o indicador da nuvem mostra "Nuvem" e, numa segunda linha, a data e a hora da última sincronização. |
