@@ -4,7 +4,9 @@
   <!-- Diário Nutricional V40: menu lateral, relatório por período, cardio sem tempo, IA com novas tentativas (V42: uma chamada só, contagem em segundos e log ia_logs). Ver ARQUITETURA.md. -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Diário Nutricional V42</title>
+<title>Diário Nutricional V44</title>
+<script>try{var t=localStorage.getItem('nutri_tema');if(t==='escuro'||((!t||t==='auto')&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}</script>
+<meta name="color-scheme" content="light dark">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link rel="stylesheet" href="css/app.css">
@@ -54,12 +56,15 @@
       <div class="bg-white text-[#003a70] p-2 rounded-xl font-bold text-xl shadow-inner">🥗</div>
       <div class="min-w-0">
         <h1 class="text-base md:text-xl font-bold tracking-tight truncate">Diário Nutricional & Bioimpedância</h1>
-        <small class="text-emerald-100 opacity-90 text-xs">Versão V42</small>
+        <small class="text-emerald-100 opacity-90 text-xs">Versão V44</small>
       </div>
     </div>
+    <div class="flex items-center gap-2 min-w-0">
+    <button type="button" id="btn-tema" class="shrink-0 w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 text-white text-lg flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#ffc20e]" aria-label="Tema: automático" title="Tema: automático">◐</button>
     <button id="btn-cloud-status" class="text-xs px-3 py-1.5 rounded-full bg-amber-600 text-white border border-amber-500 font-medium truncate max-w-[210px] flex items-center gap-1 shadow-sm transition-all hover:bg-amber-500" title="Clique para sincronizar agora com a nuvem">
       <span id="cloud-status-icon">☁️</span> <span id="cloud-status-text">Nuvem · aguardando sincronização</span>
     </button>
+    </div>
   </div>
   <input type="file" id="file-input-json" accept=".json" class="hidden">
 </header>
@@ -108,11 +113,11 @@
           </div>
           <label class="flex items-center gap-1.5 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 cursor-pointer select-none">
             <input type="checkbox" id="filtro-sem-estimativa" class="accent-amber-600">
-            Sem estimativa <span id="contador-sem-estimativa" class="bg-amber-200 rounded-full px-1.5 text-[11px]">0</span>
+            Sem estimativa <span id="contador-sem-estimativa" class="bg-amber-200 rounded-full px-1.5 text-xs">0</span>
           </label>
           <label class="flex items-center gap-1.5 text-xs font-semibold text-sky-800 bg-sky-50 border border-sky-200 rounded-lg px-3 py-2 cursor-pointer select-none" title="Dias anteriores a hoje com menos de 4 refeições lançadas">
             <input type="checkbox" id="filtro-poucas-refeicoes" class="accent-sky-600">
-            Menos de 4 refeições <span id="contador-poucas-refeicoes" class="bg-sky-200 rounded-full px-1.5 text-[11px]">0</span>
+            Menos de 4 refeições <span id="contador-poucas-refeicoes" class="bg-sky-200 rounded-full px-1.5 text-xs">0</span>
           </label>
         </div>
         
@@ -367,9 +372,9 @@
     <div id="ia-analise-resultado" class="space-y-3"></div>
     <div class="border-t border-slate-200 pt-3">
       <div class="text-xs font-bold text-slate-600 uppercase mb-2">Análises anteriores</div>
-      <div id="ia-historico" class="space-y-2 text-sm"><p class="text-xs text-slate-400">Carregando...</p></div>
+      <div id="ia-historico" class="space-y-2 text-sm"><p class="text-xs text-slate-600">Carregando...</p></div>
     </div>
-    <p class="text-[11px] text-slate-500">Dados agregados do diário (sem nome) são enviados ao Gemini. Não substitui a orientação de um nutricionista.</p>
+    <p class="text-xs text-slate-600">Dados agregados do diário (sem nome) são enviados ao Gemini. Não substitui a orientação de um nutricionista.</p>
   </div>
   <div class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-8 shadow-sm space-y-6 print-only" id="relatorio-imprimivel">
       <div class="border-b pb-4 flex justify-between items-end">
@@ -404,7 +409,7 @@
       </div>
       <div>
         <h3 id="rel-titulo-refeicoes" class="font-bold text-sm text-slate-700 border-b pb-1 mb-1">Refeições do Período</h3>
-        <p id="rel-nota-refeicoes" class="text-[11px] text-slate-500 mb-2"></p>
+        <p id="rel-nota-refeicoes" class="text-xs text-slate-600 mb-2"></p>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs border-collapse" id="rel-tabela-refeicoes-table">
             <thead class="bg-slate-100">
@@ -567,6 +572,19 @@
         </select>
       </div>
     </div>
+    <div id="atalhos-refeicao" class="space-y-2">
+      <div id="atalho-repetir" class="hidden border border-[#0a5cad] bg-sky-50 rounded-xl p-3">
+        <div id="atalho-repetir-titulo" class="text-xs font-bold text-slate-600 uppercase"></div>
+        <div id="atalho-repetir-desc" class="text-sm font-semibold text-slate-800 mt-1"></div>
+        <div id="atalho-repetir-macros" class="text-xs text-slate-600"></div>
+        <button type="button" id="btn-repetir-refeicao" class="mt-2 w-full sm:w-auto text-sm bg-[#003a70] hover:bg-[#002a52] text-white font-semibold px-4 py-2.5 rounded-lg min-h-[44px]">Repetir nesta refeição</button>
+      </div>
+      <div id="atalho-favs" class="hidden">
+        <div class="text-xs font-bold text-slate-600 uppercase mb-1">Favoritos</div>
+        <div id="lista-favoritos" class="flex flex-wrap gap-2"></div>
+      </div>
+      <button type="button" id="btn-fav-salvar" class="text-xs border border-[#0a5cad] text-[#0a5cad] hover:bg-sky-50 font-semibold px-3 py-2 rounded-lg min-h-[44px]">★ Salvar esta refeição como favorita</button>
+    </div>
     <div>
       <div class="flex justify-between items-center mb-1 flex-wrap gap-2">
         <label class="block text-xs font-semibold text-slate-600">Alimentos / Descrição da Refeição</label>
@@ -583,7 +601,7 @@
       </div>
       <textarea id="reg-alimentos" rows="3" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0a5cad] focus:outline-none text-sm" placeholder="Ex: Arroz, feijão, frango e salada... ou use a Foto IA!"></textarea>
       <div class="flex items-center gap-2 mt-1"><div id="ia-loading" class="text-xs text-purple-600 hidden italic font-medium" role="status" aria-live="polite">Analisando com IA...</div><button type="button" id="btn-ia-cancelar" class="hidden text-xs font-bold text-red-600 border border-red-200 rounded-md px-2 py-0.5 hover:bg-red-50">Cancelar</button></div>
-      <p class="text-[11px] text-slate-500 mt-1">A IA estima os alimentos e as porções; confira antes de salvar. As calorias são calculadas a partir dos macros pela fórmula 4 kcal/g de proteína, 4 kcal/g de carboidrato e 9 kcal/g de gordura. Foto não permite medir o peso exato nem identificar com certeza ingredientes ocultos.</p>
+      <p class="text-xs text-slate-600 mt-1">A IA estima os alimentos e as porções; confira antes de salvar. As calorias são calculadas a partir dos macros pela fórmula 4 kcal/g de proteína, 4 kcal/g de carboidrato e 9 kcal/g de gordura. Foto não permite medir o peso exato nem identificar com certeza ingredientes ocultos.</p>
     </div>
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <div>
@@ -674,7 +692,7 @@
         <div><label class="block text-xs font-semibold text-slate-600 mb-1">Kcal musculação</label><input type="number" id="tr-kcal-musc" min="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></div>
         <div><label class="block text-xs font-semibold text-slate-600 mb-1">Kcal cardio</label><input type="number" id="tr-kcal-cardio" min="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></div>
       </div>
-      <div class="flex justify-between items-center gap-2"><p id="tr-kcal-info" class="text-[11px] text-slate-500"></p><button type="button" id="btn-tr-recalc" class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold whitespace-nowrap">Recalcular estimativas</button></div>
+      <div class="flex justify-between items-center gap-2"><p id="tr-kcal-info" class="text-xs text-slate-600"></p><button type="button" id="btn-tr-recalc" class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold whitespace-nowrap">Recalcular estimativas</button></div>
       <p class="text-sm font-bold text-slate-800">Total: <span id="tr-kcal-total">0</span> kcal</p>
     </div>
     <div><label class="block text-xs font-semibold text-slate-600 mb-1">Observação</label><input type="text" id="tr-obs" maxlength="200" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></div>
@@ -698,7 +716,7 @@
       <div id="bio-ia-status" class="hidden text-xs text-slate-600" role="status"></div>
       <div id="bio-ia-lista" class="hidden space-y-1"></div>
       <button type="button" id="btn-bio-ia-importar" class="hidden px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold">Importar selecionados</button>
-      <p class="text-[11px] text-slate-500">O PDF é enviado ao Gemini apenas para leitura. Confira os valores antes de importar.</p>
+      <p class="text-xs text-slate-600">O PDF é enviado ao Gemini apenas para leitura. Confira os valores antes de importar.</p>
     </div>
     <div class="grid grid-cols-3 gap-3">
       <div><label class="block text-xs font-semibold text-slate-600 mb-1">Data / Hora</label><input type="datetime-local" id="bio-data" required class="w-full px-3 py-2 border rounded-lg text-sm"></div>
@@ -749,6 +767,7 @@
 <script src="js/14-treinos.js"></script>
 <script src="js/15-navegacao.js"></script>
 <script src="js/16-auth.js"></script>
+<script src="js/17-tema.js"></script>
 <script src="js/99-main.js"></script>
 </body>
 </html>

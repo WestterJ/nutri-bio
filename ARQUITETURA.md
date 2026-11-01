@@ -23,7 +23,7 @@ js/                   Lógica, carregada em ordem numérica (ver abaixo).
 | `02-estado.js` | Estado global e variáveis de sincronização | `state`, `defaultMetas`, `STORAGE_KEY`, `supabase*` (flags), `ordemRefeicao` |
 | `03-nuvem.js` | Indicador de nuvem no topo, gravação local/nuvem, provedores legados (Apps Script, Google Drive, OneDrive), modal de conflito | `updateCloudStatusPill`, `saveCloud`, `resolveSyncConflict`, `loadData` |
 | `04-diario.js` | Aba **Diário**: filtros, KPIs, tabela editável, modal de registro e salvar | `getFilteredRegistros`, `renderKPIs`, `renderTableDiario`, `proximaRefeicao`, `salvarCelulaDiario`, `abrirModalNovo`, `editarRegistro`, `copiarRegistro`, `excluirRegistro` |
-| `05-ia-refeicao.js` | **Texto IA** e **Foto IA** no modal de registro; chamada à IA com tempo máximo, novas tentativas e cancelamento; reaproveitamento de refeição idêntica do histórico | `GEMINI_MODEL`, `chamarNutriGemini(payload, {signal, onStatus, timeoutMs, tentativas})`, `buscarEstimativaNoHistorico`, `processarIAVision` |
+| `05-ia-refeicao.js` | **Texto IA** e **Foto IA** no modal de registro; chamada à IA com tempo máximo, uma chamada por clique (V42), cancelamento e log `ia_logs`; reaproveitamento de refeição idêntica do histórico | `GEMINI_MODEL`, `chamarNutriGemini(payload, {signal, onStatus, timeoutMs, tentativas})`, `buscarEstimativaNoHistorico`, `processarIAVision` |
 | `06-medidas.js` | Aba **Medidas** | `renderMedidas`, `salvarCelulaMedida`, `excluirMedida` |
 | `07-bio.js` | Aba **Bioimpedância** e importação de PDF por IA | `renderBio`, `salvarCelulaBio`, `normalizarLeituraBio`, `renderBioIA` |
 | `08-graficos.js` | Aba **Gráficos** | `renderGraficos` |
@@ -35,6 +35,7 @@ js/                   Lógica, carregada em ordem numérica (ver abaixo).
 | `14-treinos.js` | Aba **Treinos**: kcal por MET, modal, tabela, resumo | `garantirEstadoV34`, `kcalPorBloco`, `abrirTreino`, `renderTreinos` |
 | `15-navegacao.js` | **Menu lateral** (recolher, gaveta no celular, botão flutuante), troca de abas e atualização geral | `tabs`, `abrirAba`, `fecharMenuMobile`, `ajustarAlturaCabecalho`, `refreshAll` |
 | `16-auth.js` | **Tela de login**: e-mail/senha, Google, criar conta, recuperar senha | `lockApp`, `unlockApp`, `authClientFromGate`, `authFriendlyError` |
+| `17-tema.js` | **Tema claro/escuro/automático** (botão ◐ no cabeçalho, escolha em `localStorage`), cores dos gráficos no tema escuro | `aplicarTema`, `corGraf` |
 | `99-main.js` | Inicialização: sessão Supabase, `loadData`, `refreshAll`, `lockApp`, registro do service worker | — |
 
 ## Regras para manutenção
@@ -58,3 +59,7 @@ Indique o arquivo ou a área: "Em `04-diario.js`, …" ou "Na aba Treinos, …".
 | V39 | Código dividido em `css/` e `js/` (sem mudança de comportamento). |
 | V39.1 | Contadores "Sem estimativa" e "Menos de 4 refeições" respeitam o período. |
 | V40 | Menu lateral; relatório lista as refeições do período escolhido; sessões por semana com intervalo, média e semana atual; treino com kcal de cardio sem minutos aparece na tabela (e o formulário avisa); IA com até 3 tentativas, limite de tempo, botão Cancelar e reaproveitamento de refeição idêntica. |
+| V41 | Aba Treinos: edição direta na tabela, botão Copiar, filtros de período e de tipo. |
+| V42 | IA: uma chamada por clique (sem novas tentativas), timeout, contagem em segundos e Cancelar; log `ia_logs` (`SQL_IA_LOGS.sql`); função `dynamic-service` com modelo reserva. |
+| V43 | Textos de apoio com contraste mínimo de 4,5:1 e fonte mínima de 12 px; atalhos de lançamento no modal de refeição (repetir refeição anterior e favoritas em `state.favoritos`). |
+| V44 | Tema escuro (automático, claro ou escuro) com botão no cabeçalho; as regras `html.dark` ficam em `css/app.css` e só valem na tela, a impressão do relatório continua clara. |
