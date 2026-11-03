@@ -28,3 +28,6 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./service-worker.js').catch(err => console.warn('PWA: não foi possível registrar o service worker', err));
   });
 }
+
+// V46: versão exibida vem de js/00-config.js (fonte única)
+try { document.title = 'Diário Nutricional ' + APP_VERSION; const v = document.getElementById('app-version'); if (v) v.textContent = 'Versão ' + APP_VERSION; } catch (_) {}

@@ -20,7 +20,7 @@
       let lastSync = supabaseLastRemoteUpdatedAt || localStorage.getItem('nutri_last_successful_sync') || '';
       if (lastSync && !Number.isNaN(Date.parse(lastSync))) {
         const d = new Date(lastSync);
-        const dateTime = d.toLocaleDateString('pt-BR') + ', ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+        const dateTime = d.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'}) + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}); // V46: formato curto (cabe no celular)
         text.textContent = current[2] || 'Nuvem'; timeEl.textContent = current[2] ? '' : dateTime; // data e hora numa segunda linha (cabe no celular)
       } else {
         text.textContent = current[2] || (supabaseUser ? 'Nuvem conectada' : 'Nuvem');

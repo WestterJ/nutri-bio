@@ -55,7 +55,7 @@
     }
   }
 
-  function showToast(msg, isSync = false) {
+  function showToast(msg, isSync = false, ms = 6500) {
     const t = $('#toast');
     const message = $('#toast-message');
     const close = $('#toast-close');
@@ -78,8 +78,34 @@
           toastSlot && toastSlot.classList.add('hidden');
         }
       }, 320);
-    }, 6500);
+    }, ms);
   }
+
+  // V46: exclusão com "Desfazer" (substitui o confirm). Restaura o item na posição original.
+  function showToastDesfazer(msg, onUndo) {
+    showToast(msg, false, 9000);
+    const box = $('#toast-message');
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.textContent = 'Desfazer';
+    btn.className = 'ml-3 underline font-bold min-h-[44px] px-2 pointer-events-auto';
+    btn.addEventListener('click', () => { onUndo(); });
+    box.appendChild(btn);
+  }
+  window.excluirComDesfazer = function(chave, id, rotulo, aposMudar) {
+    const lista = state[chave] || [];
+    const pos = lista.findIndex(x => x.id === id);
+    if (pos < 0) return;
+    const item = lista[pos];
+    state[chave] = lista.filter(x => x.id !== id);
+    saveCloud(); aposMudar();
+    showToastDesfazer(rotulo + ' excluído.', () => {
+      const atual = state[chave] || [];
+      if (atual.some(x => x.id === item.id)) return;
+      const copia = atual.slice(); copia.splice(Math.min(pos, copia.length), 0, item);
+      state[chave] = copia; saveCloud(); aposMudar();
+      showToast('Exclusão desfeita.');
+    });
+  };
 
   if (modalRegistro) {
     modalRegistro.addEventListener('close', () => {

@@ -132,3 +132,14 @@
     html.dark ::-webkit-scrollbar-track { background: #0f172a; }
     html.dark ::-webkit-scrollbar-thumb { background: #475569; }
   }
+
+  /* V46: sem rolagem horizontal no celular — indicador de nuvem encolhe e a página nunca ultrapassa a largura */
+  body { overflow-x: clip; }
+  #btn-cloud-status { min-width: 0; }
+  #btn-cloud-status > span:last-child { min-width: 0; }
+  #cloud-status-text, #cloud-status-time { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @media (max-width: 640px) {
+    #btn-cloud-status { max-width: 44vw; flex-shrink: 1; padding-left: .5rem; padding-right: .5rem; }
+    #cloud-status-icon { display: none; }
+  }
+  canvas { max-width: 100%; } /* V46: gráficos não alargam a página em telas estreitas (320 px) */

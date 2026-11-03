@@ -35,10 +35,7 @@
     $('#med-quadril').value = ''; $('#med-braco').value = ''; $('#med-perna').value = '';
     $('#med-obs').value = ''; modalMed.showModal();
   };
-  window.excluirMedida = id => {
-    state.medidas = state.medidas.filter(x => x.id !== id);
-    saveCloud(); renderMedidas(); showToast("Medida excluída.");
-  };
+  window.excluirMedida = id => window.excluirComDesfazer('medidas', id, 'Medida', renderMedidas);
   $('#modal-medidas-close').onclick = () => modalMed.close();
   $('#modal-medidas-cancel').onclick = () => modalMed.close();
   $('#form-medidas').onsubmit = e => {

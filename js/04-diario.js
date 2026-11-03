@@ -210,10 +210,7 @@
   };
 
   window.excluirRegistro = function(id) {
-    customConfirm('Excluir Lançamento', 'Deseja excluir este registro?', () => {
-      state.registros = state.registros.filter(x => x.id !== id);
-      saveCloud(); refreshAll(); showToast("Registro excluído.");
-    });
+    window.excluirComDesfazer('registros', id, 'Refeição', refreshAll);
   };
 
 

@@ -1,0 +1,33 @@
+DIÁRIO NUTRICIONAL — V46 (sobre a V45)
+
+O QUE MUDOU
+1. Rolagem horizontal no celular corrigida. Causa: o indicador de nuvem do cabeçalho (V45) não encolhia.
+   Agora ele tem largura máxima no celular, a data é curta (dd/mm hh:mm), o logotipo e a linha "Versão" ficam
+   escondidos abaixo de 640 px, e o campo de busca do Diário quebra de linha em telas estreitas (320 px).
+   Gráficos não alargam mais a página (canvas { max-width: 100% }).
+2. Ícone novo: fundo azul #003a70 (mesmo do cabeçalho), folha + pulso em branco. Arquivos: icons/icon-192.png,
+   icons/icon-512.png e icons/apple-touch-icon.png (180 px, novo). theme-color passou para #003a70.
+3. Excluir com "Desfazer" (refeição, medida, bioimpedância, treino): sem pergunta de confirmação; aparece um aviso
+   por 9 segundos com o botão Desfazer, que devolve o item à posição original. (Favoritos continuam pedindo confirmação.)
+4. Versão única: js/00-config.js (APP_VERSION). O título, o texto "Versão" e o nome do cache do service worker
+   saem dele. Para a próxima versão, mude só esse arquivo.
+
+ARQUIVOS ALTERADOS / NOVOS
+index.html, service-worker.js, css/app.css, js/00-config.js (novo), js/01-utils.js, js/03-nuvem.js,
+js/04-diario.js, js/06-medidas.js, js/07-bio.js, js/14-treinos.js, js/99-main.js,
+icons/icon-192.png, icons/icon-512.png, icons/apple-touch-icon.png (novo), ARQUITETURA.md, LEIA-ME-V46.txt (novo).
+O manifest.webmanifest NÃO foi alterado (não veio no zip). Mantenha o que já está publicado.
+
+COMO PUBLICAR
+Copie os arquivos para as mesmas pastas do repositório, mantendo os caminhos. O service worker troca o cache sozinho
+(diario-nutricional-v46). Para ver o ícone novo no celular, remova o app da tela inicial e instale de novo.
+
+COMO TESTAR (celular ou DevTools em 360, 390 e 412 px)
+- Em cada aba, a página não pode rolar para os lados (as tabelas largas rolam só dentro do próprio quadro).
+- Excluir uma medida, uma refeição e um treino: tocar em Desfazer devolve o item no mesmo lugar.
+- Excluir e esperar o aviso sumir: o item continua excluído e a nuvem sincroniza normalmente.
+- Cabeçalho: título legível e indicador de nuvem visível com data curta.
+
+NÃO ALTERADO NESTA VERSÃO (planejado)
+V47: cartões no celular, barra inferior, margens de segurança, alvos de toque de 44 px.
+V48: sincronização com mesclagem por registro e marcadores de exclusão.

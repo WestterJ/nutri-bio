@@ -37,10 +37,7 @@
     $('#bio-peso').value = ''; $('#bio-massa-musc').value = ''; $('#bio-massa-gord').value = '';
     modalBio.showModal();
   };
-  window.excluirBio = id => {
-    state.bio = state.bio.filter(x => x.id !== id);
-    saveCloud(); renderBio(); showToast("Bioimpedância excluída.");
-  };
+  window.excluirBio = id => window.excluirComDesfazer('bio', id, 'Bioimpedância', renderBio);
   $('#modal-bio-close').onclick = () => modalBio.close();
   $('#modal-bio-cancel').onclick = () => modalBio.close();
 

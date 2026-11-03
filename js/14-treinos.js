@@ -170,7 +170,7 @@
     const id = b.dataset.id;
     if (b.classList.contains('tr-edit')) abrirTreino(id);
     else if (b.classList.contains('tr-copy')) abrirTreino(id, true);
-    else customConfirm('Excluir treino', 'Excluir este treino?', () => { state.treinos = state.treinos.filter(t => t.id !== id); saveCloud(); renderTreinos(); showToast('Treino excluído.'); }, 'Excluir');
+    else window.excluirComDesfazer('treinos', id, 'Treino', renderTreinos);
   });
 
   function renderTreinos() {

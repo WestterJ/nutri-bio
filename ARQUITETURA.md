@@ -64,3 +64,9 @@ Indique o arquivo ou a área: "Em `04-diario.js`, …" ou "Na aba Treinos, …".
 | V43 | Textos de apoio com contraste mínimo de 4,5:1 e fonte mínima de 12 px; atalhos de lançamento no modal de refeição (repetir refeição anterior e favoritas em `state.favoritos`). |
 | V44 | Tema escuro (automático, claro ou escuro) com botão no cabeçalho; as regras `html.dark` ficam em `css/app.css` e só valem na tela, a impressão do relatório continua clara. |
 | V45 | Cabeçalho no celular: o indicador da nuvem mostra "Nuvem" e, numa segunda linha, a data e a hora da última sincronização. |
+
+## V46
+- `js/00-config.js` define `self.APP_VERSION` (fonte única). É carregado antes de todos no `index.html` e via `importScripts` no `service-worker.js` (nome do cache = `diario-nutricional-` + versão em minúsculas). Mostrado em `#app-version` e no `<title>` por `99-main.js`.
+- `01-utils.js`: `showToast(msg, isSync, ms)` aceita duração; `window.excluirComDesfazer(chave, id, rotulo, aposMudar)` remove o item de `state[chave]`, salva na nuvem e mostra o aviso com "Desfazer" (devolve o item na posição original). Usado por refeições, medidas, bioimpedância e treinos.
+- `css/app.css` (final): regras V46 contra rolagem horizontal (`body { overflow-x: clip }`, indicador de nuvem encolhível, `canvas { max-width: 100% }`).
+- Ícones: azul #003a70 com glifo branco; `apple-touch-icon.png` (180 px) é novo.
