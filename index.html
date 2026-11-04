@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <!-- Diário Nutricional V46 (base V40): menu lateral, relatório por período, cardio sem tempo, IA com novas tentativas (V42: uma chamada só, contagem em segundos e log ia_logs). Ver ARQUITETURA.md. -->
+  <!-- Diário Nutricional V47 (base V40): menu lateral, relatório por período, cardio sem tempo, IA com novas tentativas (V42: uma chamada só, contagem em segundos e log ia_logs). Ver ARQUITETURA.md. -->
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Diário Nutricional V46</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Diário Nutricional V47</title>
 <script>try{var t=localStorage.getItem('nutri_tema');if(t==='escuro'||((!t||t==='auto')&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}</script>
 <meta name="color-scheme" content="light dark">
 <script src="https://cdn.tailwindcss.com"></script>
@@ -56,10 +56,10 @@
       <div class="hidden sm:block bg-white text-[#003a70] p-2 rounded-xl font-bold text-xl shadow-inner">🥗</div>
       <div class="min-w-0">
         <h1 class="text-base md:text-xl font-bold tracking-tight truncate">Diário Nutricional & Bioimpedância</h1>
-        <small id="app-version" class="hidden sm:block text-emerald-100 opacity-90 text-xs">Versão V46</small>
+        <small id="app-version" class="hidden sm:block text-emerald-100 opacity-90 text-xs">Versão V47</small>
       </div>
     </div>
-    <div class="flex items-center gap-2 min-w-0">
+    <div class="flex items-center gap-2 shrink-0">
     <button type="button" id="btn-tema" class="shrink-0 w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 text-white text-lg flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#ffc20e]" aria-label="Tema: automático" title="Tema: automático">◐</button>
     <button id="btn-cloud-status" class="text-xs px-3 py-1 rounded-full bg-amber-600 text-white border border-amber-500 font-medium whitespace-nowrap shrink-0 flex items-center gap-1.5 shadow-sm transition-all hover:bg-amber-500" title="Clique para sincronizar agora com a nuvem">
       <span id="cloud-status-icon">☁️</span><span class="flex flex-col text-left leading-tight"><span id="cloud-status-text">Nuvem</span><span id="cloud-status-time" class="text-xs opacity-90">aguardando sincronização</span></span>
@@ -90,6 +90,13 @@
     </div>
   </aside>
   <button type="button" id="fab-novo" class="fab-novo no-print" aria-label="Novo lançamento" title="Novo lançamento">＋</button>
+  <nav id="bottom-bar" class="bottom-bar no-print" aria-label="Navegação principal">
+    <button type="button" class="bb-item" data-aba="btn-tab-diario"><span class="bb-ico" aria-hidden="true">🍽️</span><span>Diário</span></button>
+    <button type="button" class="bb-item" data-aba="btn-tab-treinos"><span class="bb-ico" aria-hidden="true">🏋️</span><span>Treinos</span></button>
+    <button type="button" id="bb-novo" class="bb-item bb-novo" aria-label="Novo lançamento"><span class="bb-plus" aria-hidden="true">＋</span><span>Lançar</span></button>
+    <button type="button" class="bb-item" data-aba="btn-tab-relatorio"><span class="bb-ico" aria-hidden="true">📄</span><span>Relatório</span></button>
+    <button type="button" id="bb-mais" class="bb-item" aria-controls="app-sidebar" aria-expanded="false"><span class="bb-ico" aria-hidden="true">☰</span><span>Mais</span></button>
+  </nav>
 <main class="flex-1 min-w-0 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6 relative">
   
   <!-- MODULO: DIÁRIO ALIMENTAR -->
@@ -142,7 +149,7 @@
       </div>
 
       <div class="overflow-x-auto max-h-[60vh]">
-        <table class="w-full text-left border-collapse text-sm min-w-[1200px]">
+        <table class="tabela-cards tabela-cards--diario w-full text-left border-collapse text-sm min-w-[1200px]">
           <thead class="bg-[#003a70] text-white uppercase text-xs sticky top-0 z-10">
             <tr>
               <th class="p-3">Data</th>
@@ -254,7 +261,7 @@
     </div>
     <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse text-sm min-w-[1200px]">
+        <table class="tabela-cards tabela-cards--bio w-full text-left border-collapse text-sm min-w-[1200px]">
           <thead class="bg-[#003a70] text-white uppercase text-xs">
             <tr>
               <th class="p-3">Data / Hora</th>
@@ -313,7 +320,7 @@
       <span id="tr-contador" class="text-xs text-slate-500 font-medium"></span>
     </section>
     <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden"><div class="overflow-x-auto">
-      <table class="w-full text-left border-collapse text-sm min-w-[1040px]"><thead class="bg-[#003a70] text-white uppercase text-xs"><tr><th class="p-3">Data</th><th class="p-3">Treino</th><th class="p-3">Intensidade</th><th class="p-3 text-center">Min musc.</th><th class="p-3">Cardio</th><th class="p-3 text-center">Min cardio</th><th class="p-3 text-center">Kcal musc.</th><th class="p-3 text-center">Kcal cardio</th><th class="p-3 text-center">Kcal total</th><th class="p-3">Obs.</th><th class="p-3"></th></tr></thead><tbody id="tbody-treinos"></tbody></table>
+      <table class="tabela-cards tabela-cards--treinos w-full text-left border-collapse text-sm min-w-[1040px]"><thead class="bg-[#003a70] text-white uppercase text-xs"><tr><th class="p-3">Data</th><th class="p-3">Treino</th><th class="p-3">Intensidade</th><th class="p-3 text-center">Min musc.</th><th class="p-3">Cardio</th><th class="p-3 text-center">Min cardio</th><th class="p-3 text-center">Kcal musc.</th><th class="p-3 text-center">Kcal cardio</th><th class="p-3 text-center">Kcal total</th><th class="p-3">Obs.</th><th class="p-3"></th></tr></thead><tbody id="tbody-treinos"></tbody></table>
     </div></div>
   </div>
 

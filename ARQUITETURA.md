@@ -70,3 +70,10 @@ Indique o arquivo ou a área: "Em `04-diario.js`, …" ou "Na aba Treinos, …".
 - `01-utils.js`: `showToast(msg, isSync, ms)` aceita duração; `window.excluirComDesfazer(chave, id, rotulo, aposMudar)` remove o item de `state[chave]`, salva na nuvem e mostra o aviso com "Desfazer" (devolve o item na posição original). Usado por refeições, medidas, bioimpedância e treinos.
 - `css/app.css` (final): regras V46 contra rolagem horizontal (`body { overflow-x: clip }`, indicador de nuvem encolhível, `canvas { max-width: 100% }`).
 - Ícones: azul #003a70 com glifo branco; `apple-touch-icon.png` (180 px) é novo.
+
+## V47
+- Cartões no celular: as tabelas de Diário, Bio e Treinos têm a classe `tabela-cards` (+ `--diario`, `--bio`, `--treinos`). Até 700 px o CSS (final de `css/app.css`) transforma cada `<tr>` em um cartão em grade de 6 colunas; os rótulos vêm de `data-label`.
+- `js/99-main.js` (final): `MutationObserver` em `#table-body`, `#table-bio-body` e `#tbody-treinos` copia o texto de cada `<th>` para o `data-label` do `<td>` da mesma posição (não precisa mexer nos renderizadores). Células com `colspan` e a coluna "Ações" ficam sem rótulo.
+- Barra inferior: `<nav id="bottom-bar">` no `index.html`; atalhos com `data-aba="btn-tab-..."`; `15-navegacao.js` liga os cliques, marca `.active` em `abrirAba` e usa `#bb-novo` (novo lançamento) e `#bb-mais` (abre o menu lateral). O `#fab-novo` fica oculto até 900 px.
+- Safe-area: `viewport-fit=cover`; `.app-header` ganha `border-top: env(safe-area-inset-top)`; a barra inferior e o `body` usam `env(safe-area-inset-bottom)`.
+- Cabeçalho: o grupo da direita (tema + nuvem) é `shrink-0`; quem encolhe é o título.

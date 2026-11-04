@@ -14,6 +14,7 @@
       if (ativo) $('#' + b).setAttribute('aria-current', 'page'); else $('#' + b).removeAttribute('aria-current');
       $('#' + tabs[b]).classList.toggle('hidden', !ativo);
     });
+    document.querySelectorAll('.bb-item[data-aba]').forEach(b => b.classList.toggle('active', b.dataset.aba === btnId));
     fecharMenuMobile();
     window.scrollTo({ top: 0 });
     if (btnId === 'btn-tab-graficos') renderGraficos();
@@ -40,11 +41,14 @@
   sincronizarBotaoRecolher();
 
   // Celular: o menu vira gaveta.
-  function fecharMenuMobile() { document.body.classList.remove('sidebar-open'); $('#btn-menu-mobile').setAttribute('aria-expanded', 'false'); }
+  function fecharMenuMobile() { document.body.classList.remove('sidebar-open'); $('#btn-menu-mobile').setAttribute('aria-expanded', 'false'); const bm = $('#bb-mais'); if (bm) bm.setAttribute('aria-expanded', 'false'); }
   $('#btn-menu-mobile').onclick = () => {
     const aberto = document.body.classList.toggle('sidebar-open');
     $('#btn-menu-mobile').setAttribute('aria-expanded', String(aberto));
   };
+  // V47: barra inferior (celular) — atalhos, Lançar no centro e "Mais" abre o menu completo
+  document.querySelectorAll('.bb-item[data-aba]').forEach(b => { b.onclick = () => abrirAba(b.dataset.aba); });
+  $('#bb-mais').onclick = () => { $('#btn-menu-mobile').click(); $('#bb-mais').setAttribute('aria-expanded', String(document.body.classList.contains('sidebar-open'))); };
   $('#sidebar-backdrop').onclick = fecharMenuMobile;
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('sidebar-open')) fecharMenuMobile(); });
 
@@ -57,6 +61,7 @@
   const novoLancamento = () => { abrirAba('btn-tab-diario'); abrirModalNovo(); };
   $('#sidebar-novo').onclick = novoLancamento;
   $('#fab-novo').onclick = novoLancamento;
+  $('#bb-novo').onclick = novoLancamento;
 
   function refreshAll() {
     garantirEstadoV34();
