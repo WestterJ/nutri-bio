@@ -322,7 +322,7 @@
       localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
       if (supabaseUser) {
         supabaseLastRemoteUpdatedAt = tempRemoteUpdatedAt || supabaseLastRemoteUpdatedAt;
-        supabaseLocalDirty = false; supabaseSyncUiState = 'success';
+        supabaseLocalDirty = false; supabaseSyncUiState = 'success'; salvarBaseSync(state);
         localStorage.removeItem(STORAGE_KEY + '_pending_sync');
         updateCloudStatusPill();
       }

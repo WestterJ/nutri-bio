@@ -35,6 +35,25 @@
     const dlg = $('#modal-sync-conflict'); if (!dlg.open) dlg.showModal();
   }
 
+  // V48: mescla automática (3 vias) quando a nuvem mudou em outro aparelho. Retorna true se mesclou e agendou novo envio.
+  let supabaseMergeTentativas = 0;
+  async function mesclarComNuvem(remote) {
+    try {
+      if (++supabaseMergeTentativas > 3) { supabaseMergeTentativas = 0; return false; } // evita laço: cai no aviso manual
+      remote = remote || await supabaseReadRemote();
+      if (!remote || !remote.data) return false;
+      guardarAntesDeMesclar(state, remote.data);
+      const r = mergeTresVias(lerBaseSync(), state, remote.data);
+      state = r.merged; if (!state.metas) state.metas = defaultMetas;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      supabaseLastRemoteUpdatedAt = remote.updated_at || supabaseLastRemoteUpdatedAt;
+      supabaseLocalDirty = true; supabaseSaveQueued = true;
+      refreshAll();
+      showToast('Nuvem atualizada em outro aparelho. Dados mesclados: ' + resumoMesclagem(r.info) + '.');
+      return true;
+    } catch (err) { console.warn('Mesclagem automática falhou:', err); return false; }
+  }
+
   async function syncSupabaseNow(showMessage=true) {
     if (!supabaseClient || !supabaseUser) { if(showMessage) showToast('Entre no Supabase antes de sincronizar.'); return; }
     if (supabaseSaveInFlight) { supabaseSaveQueued = true; return; }
@@ -50,6 +69,7 @@
       const remoteBeforeSave = await supabaseReadRemote();
       const remoteBeforeTime = remoteBeforeSave && remoteBeforeSave.updated_at ? remoteBeforeSave.updated_at : null;
       if (remoteBeforeSave && remoteBeforeSave.data && remoteBeforeTime && supabaseLastRemoteUpdatedAt && Date.parse(remoteBeforeTime) > Date.parse(supabaseLastRemoteUpdatedAt)) {
+        if (await mesclarComNuvem(remoteBeforeSave)) return; // V48: mescla em vez de perguntar
         conflitoSupabase(remoteBeforeSave);
         return;
       }
@@ -59,12 +79,13 @@
         // Gravação condicional: só atualiza se a nuvem ainda está na versão que lemos.
         const res = await supabaseClient.from('diary_data').update({data:snapshot,updated_at:savedAt}).eq('user_id',supabaseUser.id).eq('updated_at',supabaseLastRemoteUpdatedAt).select('user_id');
         error = res.error;
-        if (!error && (!res.data || res.data.length === 0)) { conflitoSupabase(null); return; }
+        if (!error && (!res.data || res.data.length === 0)) { if (await mesclarComNuvem(null)) return; conflitoSupabase(null); return; }
       } else {
         ({error} = await supabaseClient.from('diary_data').upsert({user_id:supabaseUser.id,data:snapshot,updated_at:savedAt},{onConflict:'user_id'}));
       }
       if (error) throw error;
       supabaseLastRemoteUpdatedAt = savedAt;
+      supabaseMergeTentativas = 0; salvarBaseSync(snapshot); // V48: base da próxima mesclagem
       localStorage.setItem('nutri_last_successful_sync', savedAt);
       localStorage.removeItem(STORAGE_KEY + '_pending_sync');
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -115,6 +136,7 @@
         refreshAll();
         if (showMessage) showToast('Dados atualizados a partir do Supabase.');
       }
+      salvarBaseSync(remote.data);
       supabaseLastRemoteUpdatedAt = remoteTime || new Date().toISOString();
     } catch(err) {
       console.warn('Verificação automática Supabase:', err.message || err);
@@ -175,16 +197,23 @@
         }
         // Se havia alterações locais pendentes, não as descarta silenciosamente no login.
         if (hasPendingLocalChanges && localSnapshot !== remoteSnapshot) {
-          supabaseLocalDirty = true;
-          userLocalHasData = true;
+          // V48: em vez de só avisar, mescla (base x este aparelho x nuvem) e envia o resultado
+          guardarAntesDeMesclar(state, remote.data);
+          const mg = mergeTresVias(lerBaseSync(), state, remote.data);
+          state = mg.merged; if (!state.metas) state.metas = defaultMetas;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          supabaseLastRemoteUpdatedAt = remote.updated_at || supabaseLastRemoteUpdatedAt;
+          supabaseLocalDirty = true; userLocalHasData = true;
           refreshAll();
-          showToast('Há alterações locais ainda não sincronizadas. Seus dados deste aparelho foram preservados; revise antes de enviar para a nuvem.');
+          showToast('Havia alterações deste aparelho ainda não enviadas. Dados mesclados com a nuvem: ' + resumoMesclagem(mg.info) + '.');
+          scheduleSupabaseSave(false);
         } else {
           supabaseLocalDirty = false;
           state = remote.data;
           if (!state.metas) state.metas = defaultMetas;
           localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
           localStorage.removeItem(STORAGE_KEY + '_pending_sync');
+          salvarBaseSync(remote.data);
           userLocalHasData = true;
           refreshAll();
           if (initial) showToast('Dados mais recentes da nuvem carregados neste dispositivo.');
