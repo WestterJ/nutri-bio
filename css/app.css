@@ -62,13 +62,13 @@
   .fab-novo { display: none; }
   @media (max-width: 900px) {
     .mobile-menu-btn { display: inline-flex; align-items: center; justify-content: center; }
-    .app-sidebar { position: fixed; left: 0; top: 0; height: 100vh; width: 260px; flex-basis: auto; transform: translateX(-105%); box-shadow: 4px 0 24px rgba(15,23,42,.25); z-index: 60; padding-top: 1rem; }
+    .app-sidebar { position: fixed; left: 0; top: 0; height: 100vh; height: 100dvh; overflow-y: auto; padding-bottom: calc(.75rem + env(safe-area-inset-bottom, 0px)); width: 260px; flex-basis: auto; transform: translateX(-105%); box-shadow: 4px 0 24px rgba(15,23,42,.25); z-index: 60; padding-top: 1rem; }
     body.sidebar-collapsed .app-sidebar { width: 260px; }
     body.sidebar-collapsed .nav-label { display: inline; }
     body.sidebar-collapsed .nav-btn, body.sidebar-collapsed .sidebar-launch { justify-content: flex-start; padding: .6rem .7rem; gap: .7rem; }
     body.sidebar-open .app-sidebar { transform: translateX(0); }
     body.sidebar-open .sidebar-backdrop { display: block; position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 55; }
-    .sidebar-foot { display: none; }
+    .sidebar-foot { display: block; }
     .fab-novo { display: flex; align-items: center; justify-content: center; position: fixed; right: 1rem; bottom: 1rem; width: 3.4rem; height: 3.4rem; border-radius: 999px;
       background: #ffc20e; color: #0f172a; font-size: 28px; font-weight: 700; box-shadow: 0 6px 18px rgba(15,23,42,.3); z-index: 45; }
   }

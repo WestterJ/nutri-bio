@@ -25,15 +25,20 @@
   Object.keys(tabs).forEach(btnId => { $('#' + btnId).onclick = () => abrirAba(btnId); });
 
   // Menu recolhível (desktop): a escolha fica salva neste aparelho.
+  const mqMobile = window.matchMedia('(max-width: 900px)');
   function sincronizarBotaoRecolher() {
-    const rec = document.body.classList.contains('sidebar-collapsed');
+    const mob = mqMobile.matches; // V47.1: no celular o mesmo botão fecha a gaveta
+    const rec = !mob && document.body.classList.contains('sidebar-collapsed');
     const b = $('#sidebar-toggle');
     b.setAttribute('aria-expanded', String(!rec));
-    b.title = rec ? 'Expandir menu' : 'Recolher menu';
+    const rotulo = mob ? 'Fechar menu' : rec ? 'Expandir menu' : 'Recolher menu';
+    b.title = rotulo;
     b.querySelector('.nav-ico').textContent = rec ? '»' : '«';
-    b.querySelector('.nav-label').textContent = rec ? 'Expandir menu' : 'Recolher menu';
+    b.querySelector('.nav-label').textContent = rotulo;
   }
+  mqMobile.addEventListener('change', sincronizarBotaoRecolher);
   $('#sidebar-toggle').onclick = () => {
+    if (mqMobile.matches) { fecharMenuMobile(); return; }
     const rec = document.body.classList.toggle('sidebar-collapsed');
     try { localStorage.setItem('nutri_ui_sidebar', rec ? 'collapsed' : 'expanded'); } catch (_) {}
     sincronizarBotaoRecolher();

@@ -77,3 +77,7 @@ Indique o arquivo ou a área: "Em `04-diario.js`, …" ou "Na aba Treinos, …".
 - Barra inferior: `<nav id="bottom-bar">` no `index.html`; atalhos com `data-aba="btn-tab-..."`; `15-navegacao.js` liga os cliques, marca `.active` em `abrirAba` e usa `#bb-novo` (novo lançamento) e `#bb-mais` (abre o menu lateral). O `#fab-novo` fica oculto até 900 px.
 - Safe-area: `viewport-fit=cover`; `.app-header` ganha `border-top: env(safe-area-inset-top)`; a barra inferior e o `body` usam `env(safe-area-inset-bottom)`.
 - Cabeçalho: o grupo da direita (tema + nuvem) é `shrink-0`; quem encolhe é o título.
+
+## V47.1
+- Gaveta do menu (≤ 900 px): `height: 100vh; height: 100dvh` + `overflow-y: auto` + padding de safe-area; `.sidebar-foot` visível; `#sidebar-toggle` vira "Fechar menu" no celular (`mqMobile` em `15-navegacao.js`).
+- Logo do cabeçalho e do login: `<img src="icons/icon-192.png">`; favicon `rel="icon"`; `17-tema.js` mantém `theme-color` em `#003a70`.

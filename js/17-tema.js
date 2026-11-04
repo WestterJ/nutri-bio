@@ -15,7 +15,7 @@
     const t = temaEscolhido();
     const escuro = t === 'escuro' || (t === 'auto' && !!(mqTemaEscuro && mqTemaEscuro.matches));
     document.documentElement.classList.toggle('dark', escuro);
-    const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute('content', escuro ? '#0b1220' : '#0f766e');
+    const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute('content', '#003a70');
     const b = $('#btn-tema');
     if (b) { b.textContent = TEMA_INFO[t][0]; b.title = TEMA_INFO[t][1]; b.setAttribute('aria-label', TEMA_INFO[t][1] + '. Toque para alternar.'); }
     if (window.Chart) { Chart.defaults.color = escuro ? '#cbd5e1' : '#475569'; Chart.defaults.borderColor = escuro ? 'rgba(148,163,184,.25)' : 'rgba(0,0,0,.1)'; }

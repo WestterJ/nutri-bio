@@ -28,3 +28,17 @@ COMO TESTAR (celular, ou DevTools em 320, 360, 390 e 412 px; e uma tela de compu
 - Modo escuro: rótulos dos cartões legíveis.
 
 AINDA NÃO FEITO: V48 — sincronização com mesclagem por registro e marcadores de exclusão.
+
+V47.1 — CORREÇÕES (pedidas após o teste no celular)
+1. Menu lateral no celular: "Configurações" e o botão do rodapé voltaram a aparecer. A gaveta usava 100vh, que no Chrome do
+   Android é maior que a tela visível (barra de endereço), e cortava o fim do menu. Agora usa 100dvh, rola se precisar e
+   respeita a barra de gestos.
+2. O botão "Recolher menu" (que só existia no computador) agora aparece no celular como "Fechar menu" e fecha a gaveta.
+3. Ícone da página: o quadrado branco com o prato foi trocado pelo ícone novo (fundo azul, folha e pulso brancos) no
+   cabeçalho (inclusive no celular, onde antes ficava escondido) e na tela de login. Foi adicionado o favicon da aba
+   (icons/icon-192.png).
+4. Cor da barra do navegador: o tema escondia o azul e forçava verde-azulado (#0f766e). Agora a barra fica azul #003a70.
+5. No celular o título mostra só "Diário Nutricional" (o complemento "& Bioimpedância" aparece a partir de 640 px), para caber
+   o ícone sem cortar o texto.
+Versão: V47.1 (o cache do service worker passa a diario-nutricional-v47.1; abra o app 2 vezes para atualizar).
+Arquivos novos nesta correção: index.html, css/app.css, js/00-config.js, js/15-navegacao.js, js/17-tema.js.
