@@ -81,3 +81,8 @@ Indique o arquivo ou a área: "Em `04-diario.js`, …" ou "Na aba Treinos, …".
 ## V47.1
 - Gaveta do menu (≤ 900 px): `height: 100vh; height: 100dvh` + `overflow-y: auto` + padding de safe-area; `.sidebar-foot` visível; `#sidebar-toggle` vira "Fechar menu" no celular (`mqMobile` em `15-navegacao.js`).
 - Logo do cabeçalho e do login: `<img src="icons/icon-192.png">`; favicon `rel="icon"`; `17-tema.js` mantém `theme-color` em `#003a70`.
+
+## V48 — sincronização com mesclagem
+- `js/02a-merge.js`: `mergeTresVias(base, local, remoto)` (puro): listas por `id` (itens sem id, como favoritos antigos, por conteúdo), objetos (metas) campo a campo. Regras: só-um-lado vence; os dois editaram → vale o local; exclusão de um lado propaga se o outro não editou. `salvarBaseSync/lerBaseSync` (`<STORAGE_KEY>_base`), `guardarAntesDeMesclar` (`<STORAGE_KEY>_pre_merge`), `resumoMesclagem`.
+- `13-sync-supabase.js`: `mesclarComNuvem(remote)` é chamada quando a nuvem é mais nova que a última leitura ou o `update` condicional afeta 0 linhas; mescla, reagenda o envio (máx. 3 tentativas seguidas, depois cai em `conflitoSupabase` e a janela antiga). A base é gravada após envio bem-sucedido, após receber dados da nuvem (polling/login) e ao escolher "Baixar" na janela. No login com pendências locais, mescla em vez de só avisar.
+- Sem alteração no banco: `diary_data(user_id, data jsonb, updated_at)`.

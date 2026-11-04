@@ -1,0 +1,48 @@
+DIÁRIO NUTRICIONAL — V48 (sobre a V47.2; este pacote inclui também tudo da V46 e da V47.x, então serve a partir da V45)
+
+O QUE MUDOU: SINCRONIZAÇÃO COM MESCLAGEM POR REGISTRO
+Antes: se a nuvem tinha sido alterada em outro aparelho, o app mostrava uma janela "Baixar da nuvem (perde o que não foi
+enviado) ou Enviar (sobrescreve a nuvem)". Qualquer das duas escolhas podia perder dados.
+Agora: o app mescla sozinho, registro por registro (refeições, medidas, bioimpedância, treinos, favoritos e metas).
+Ele guarda uma "base" = cópia dos dados na última sincronização bem-sucedida e compara três versões
+(base × este aparelho × nuvem):
+- Registro novo em um dos lados: entra no resultado.
+- Registro editado só em um lado: vale a edição.
+- Registro excluído em um lado e não mexido no outro: continua excluído (a exclusão se propaga, sem precisar de marcadores).
+- Registro editado nos dois aparelhos (mesmo registro): vale a versão DESTE aparelho (o que está sendo enviado) e o aviso
+  informa quantos foram assim. Se um lado editou o que o outro excluiu, o registro é mantido.
+- Metas: decididas campo a campo.
+Depois de mesclar, o resultado é enviado à nuvem automaticamente (até 3 tentativas seguidas; se mesmo assim houver
+conflito, aparece a janela antiga como último recurso).
+Também no login: se este aparelho tinha alterações pendentes, agora elas são mescladas com a nuvem (antes só havia um aviso).
+Aviso na tela: "Nuvem atualizada em outro aparelho. Dados mesclados: 1 novo(s) da nuvem, 2 exclusão(ões) da nuvem, ...".
+
+SEGURANÇA
+- Antes de cada mesclagem, o app guarda neste aparelho uma cópia do que existia (local + nuvem), só a última
+  (chave "<usuario>_pre_merge" do armazenamento local). Ainda não existe botão para restaurá-la; serve para recuperação manual.
+- Na primeira vez após atualizar não existe base: nesse caso a mesclagem une os dois lados e NADA é apagado; as exclusões
+  só passam a se propagar depois da primeira sincronização completa (a base é gravada ao sincronizar).
+- O armazenamento local do aparelho guarda agora uma cópia extra dos dados (a base). Com milhares de registros ainda é pouco.
+
+ARQUIVOS (V46 a V48)
+index.html, service-worker.js, css/app.css, js/00-config.js, js/01-utils.js, js/02a-merge.js (novo), js/03-nuvem.js,
+js/04-diario.js, js/06-medidas.js, js/07-bio.js, js/13-sync-supabase.js, js/14-treinos.js, js/15-navegacao.js, js/17-tema.js,
+js/99-main.js, icons/*, ARQUITETURA.md, LEIA-ME-V46.txt, LEIA-ME-V47.txt, LEIA-ME-V48.txt.
+Banco (Supabase): nenhuma mudança. Mesma tabela diary_data, mesmo formato de dados.
+
+COMO TESTAR (use dois aparelhos ou computador + celular, mesma conta)
+1. Atualize os dois (abra o app 2 vezes) e deixe sincronizar uma vez em cada um.
+2. Sem sincronizar um deles (modo avião), no aparelho A exclua uma refeição e crie outra; no B edite outra refeição e crie uma nova.
+3. Reconecte e sincronize A depois B. Nos dois devem aparecer: a exclusão do A, a refeição nova do A, a edição do B e a
+   refeição nova do B. O aviso de mesclagem deve aparecer no segundo aparelho a sincronizar.
+4. Edite a MESMA refeição nos dois: no segundo aparelho a sincronizar vale a edição dele, e o aviso conta 1 alterado nos dois.
+5. Confira que "Desfazer" de exclusões (V46) continua funcionando e propaga a exclusão corretamente.
+
+COMO FOI TESTADO
+- Lógica de mesclagem: 11 casos automatizados (novos, edições, exclusões, conflito, sem base, metas, favoritos, restaurar padrão).
+- Dois aparelhos simulados contra um Supabase falso em memória: exclusão + inclusão num lado, edição + inclusão + exclusão no
+  outro, ambos convergiram para o mesmo resultado esperado, e o conflito no mesmo registro manteve a versão do aparelho que
+  enviou e gravou a cópia pré-mesclagem.
+NÃO TESTADO: Supabase real (RLS, rede instável, latência), login com alterações pendentes em aparelho real, aparelhos reais.
+
+AINDA NÃO FEITO: tela para restaurar a cópia pré-mesclagem; escolher a versão em conflitos (hoje vale a deste aparelho).
