@@ -176,3 +176,10 @@
     .tabela-cards--bio td:first-child { grid-column: 1 / -1; }
     .tabela-cards--treinos td:nth-child(10) { grid-column: 1 / -1; }
   }
+
+  /* V47.2: versão do app no rodapé do menu (só no celular; no computador ela aparece no cabeçalho) */
+  .sidebar-versao { display: none; }
+  @media (max-width: 900px) {
+    .sidebar-versao { display: block; text-align: center; font-size: 12px; color: #64748b; padding: .35rem 0 .1rem; }
+    html.dark .sidebar-versao { color: #94a3b8; }
+  }

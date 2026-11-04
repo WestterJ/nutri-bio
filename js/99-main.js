@@ -30,7 +30,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // V46: versão exibida vem de js/00-config.js (fonte única)
-try { document.title = 'Diário Nutricional ' + APP_VERSION; const v = document.getElementById('app-version'); if (v) v.textContent = 'Versão ' + APP_VERSION; } catch (_) {}
+try { document.title = 'Diário Nutricional ' + APP_VERSION; const v = document.getElementById('app-version'); if (v) v.textContent = 'Versão ' + APP_VERSION; const sv = document.getElementById('sidebar-versao'); if (sv) sv.textContent = 'Versão ' + APP_VERSION; } catch (_) {}
 
 // V47: no celular as tabelas viram cartões; cada célula recebe o nome da coluna (data-label) a partir do <thead>.
 (function () {

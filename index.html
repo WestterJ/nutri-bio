@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <!-- Diário Nutricional V47.1 (base V40): menu lateral, relatório por período, cardio sem tempo, IA com novas tentativas (V42: uma chamada só, contagem em segundos e log ia_logs). Ver ARQUITETURA.md. -->
+  <!-- Diário Nutricional V47.2 (base V40): menu lateral, relatório por período, cardio sem tempo, IA com novas tentativas (V42: uma chamada só, contagem em segundos e log ia_logs). Ver ARQUITETURA.md. -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Diário Nutricional V47.1</title>
+<title>Diário Nutricional V47.2</title>
 <script>try{var t=localStorage.getItem('nutri_tema');if(t==='escuro'||((!t||t==='auto')&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}</script>
 <meta name="color-scheme" content="light dark">
 <script src="https://cdn.tailwindcss.com"></script>
@@ -57,7 +57,7 @@
       <img src="icons/icon-192.png" alt="" width="40" height="40" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl shrink-0 ring-1 ring-white/25">
       <div class="min-w-0">
         <h1 class="text-base md:text-xl font-bold tracking-tight truncate">Diário Nutricional<span class="hidden sm:inline"> & Bioimpedância</span></h1>
-        <small id="app-version" class="hidden sm:block text-emerald-100 opacity-90 text-xs">Versão V47.1</small>
+        <small id="app-version" class="hidden sm:block text-emerald-100 opacity-90 text-xs">Versão V47.2</small>
       </div>
     </div>
     <div class="flex items-center gap-2 shrink-0">
@@ -88,6 +88,7 @@
     </nav>
     <div class="sidebar-foot">
       <button type="button" id="sidebar-toggle" class="nav-btn sidebar-collapse-btn" aria-expanded="true" aria-controls="app-sidebar" title="Recolher menu"><span class="nav-ico" aria-hidden="true">«</span><span class="nav-label">Recolher menu</span></button>
+      <div id="sidebar-versao" class="sidebar-versao" aria-label="Versão do app">Versão V47.2</div>
     </div>
   </aside>
   <button type="button" id="fab-novo" class="fab-novo no-print" aria-label="Novo lançamento" title="Novo lançamento">＋</button>

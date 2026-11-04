@@ -42,3 +42,7 @@ V47.1 — CORREÇÕES (pedidas após o teste no celular)
    o ícone sem cortar o texto.
 Versão: V47.1 (o cache do service worker passa a diario-nutricional-v47.1; abra o app 2 vezes para atualizar).
 Arquivos novos nesta correção: index.html, css/app.css, js/00-config.js, js/15-navegacao.js, js/17-tema.js.
+
+V47.2 — A versão do app agora aparece no rodapé do menu lateral do celular ("Versão V47.2", abaixo de "Fechar menu").
+No computador continua no cabeçalho. Arquivos novos: index.html, css/app.css, js/00-config.js, js/99-main.js.
+O cache do service worker passa a diario-nutricional-v47.2 (abra o app duas vezes para atualizar).
