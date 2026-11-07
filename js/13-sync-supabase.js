@@ -174,10 +174,11 @@
 
   async function applySupabaseSession(session, initial=false) {
     const nextUser = session && session.user ? session.user : null;
-    if (!nextUser) { supabaseUser = null; updateCloudStatusPill(); lockApp(); return; }
+    if (!nextUser) { supabaseUser = null; if (window.NutriUsuarios) window.NutriUsuarios.reset(); updateCloudStatusPill(); lockApp(); return; }
     if (passwordRecoveryMode) { supabaseUser = nextUser; updateCloudStatusPill(); lockApp(); return; }
     if (!supabaseUser || supabaseUser.id !== nextUser.id) activateUserStorage(nextUser);
     supabaseUser = nextUser;
+    if (window.NutriUsuarios) window.NutriUsuarios.refresh(true); // V49: libera a aba Usuários se esta conta for administradora
     supabaseSyncUiState = 'idle';
     cloudProvider = 'supabase';
     localStorage.setItem('nutri_cloud_provider','supabase');
@@ -254,6 +255,6 @@
   };
   $('#btn-supabase-sync').onclick = () => syncSupabaseNow(true);
   $('#btn-supabase-logout').onclick = async () => {
-    try { if(supabaseClient) await supabaseClient.auth.signOut(); supabaseUser=null; cloudProvider='local'; localStorage.setItem('nutri_cloud_provider','local'); updateCloudStatusPill(); lockApp(); setAuthMessage('Você saiu da conta. Entre novamente para acessar seus registros.','info'); }
+    try { if(supabaseClient) await supabaseClient.auth.signOut(); supabaseUser=null; if (window.NutriUsuarios) window.NutriUsuarios.reset(); cloudProvider='local'; localStorage.setItem('nutri_cloud_provider','local'); updateCloudStatusPill(); lockApp(); setAuthMessage('Você saiu da conta. Entre novamente para acessar seus registros.','info'); }
     catch(err) { showToast('Erro ao sair: '+err.message); }
   };

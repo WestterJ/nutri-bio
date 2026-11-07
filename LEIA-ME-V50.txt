@@ -1,0 +1,44 @@
+DIÁRIO NUTRICIONAL — V50 (sobre a V49; este pacote inclui também tudo da V46 a V49, então serve a partir da V45)
+
+O QUE MUDOU: O ADMINISTRADOR LIBERA OU BLOQUEIA A IA POR USUÁRIO
+- Na aba Usuários, cada conta (menos a do administrador) tem a opção "Sem IA" / "IA liberada". O resumo mostra "N com IA liberada".
+- Quem não tem IA liberada não vê os recursos de IA: Texto IA e Foto IA (lançamento de refeição), leitura de PDF de bioimpedância
+  ("Ler com IA") e a "Análise de IA da alimentação" do Relatório.
+- O servidor também barra: a Edge Function dynamic-service consulta nutri_can_use_ai() e responde 403 "IA não liberada para esta conta"
+  (isso vale só para os modos do Diário; "edital" e "agenda" são de outros apps e não são afetados). Esconder o botão sozinho não
+  impediria quem chamasse a função diretamente; a barreira real é a da função.
+- O administrador sempre tem IA. Contas novas entram SEM IA até você liberar.
+
+ORDEM PARA PUBLICAR (importante)
+1. Supabase > SQL Editor: rode SQL_ACESSO_IA_V50.sql UMA vez (exige o SQL_USUARIOS_IA_V49.sql já aplicado).
+   Ele libera a IA de TODAS as contas que já existem (para nada mudar para elas) e passa a barrar as novas.
+   Depois, em Usuários, bloqueie quem você quiser.
+2. Faça o deploy da Edge Function atualizada: superbase-functions/dynamic-service/index.ts (novo bloco "V50: permissão de IA do Diário").
+   Sem este passo, a IA continua funcionando para todos (o navegador esconde os botões, mas o servidor não barra).
+3. Suba os demais arquivos para o GitHub, abra o app 2 vezes e confira "V50".
+Se publicar o app antes do SQL: tudo continua como antes (a IA fica liberada para todos e a tela Usuários só mostra o consumo).
+
+COMPORTAMENTOS A SABER
+- Quem perde a IA vê os botões sumirem ao reabrir o app ou ao voltar para ele (a permissão é consultada nesses momentos, no máx. a cada 30 s).
+- Sem internet, o app usa a última permissão conhecida desta conta; se nunca houve resposta, a IA fica oculta.
+- Se a verificação de permissão falhar por erro do banco, a função responde 503 em vez de liberar.
+- Se a função do banco ainda não existir (SQL V50 não rodado), a Edge Function mantém o comportamento antigo (libera).
+
+ARQUIVOS (V46 a V50)
+index.html, service-worker.js, css/app.css, js/00-config.js, js/01-utils.js, js/02a-merge.js, js/03-nuvem.js, js/04-diario.js,
+js/05-ia-refeicao.js, js/06-medidas.js, js/07-bio.js, js/13-sync-supabase.js, js/14-treinos.js, js/15-navegacao.js, js/17-tema.js,
+js/18-usuarios.js, js/99-main.js, icons/*, SQL_USUARIOS_IA_V49.sql, SQL_ACESSO_IA_V50.sql (novo),
+superbase-functions/dynamic-service/index.ts (alterado), ARQUITETURA.md, LEIA-ME-V46..V50.txt.
+
+COMO TESTAR
+1. Como administrador, em Usuários, ponha uma conta de teste em "Sem IA". Entre com ela (ou espere ela voltar ao app): os botões de IA
+   somem. Tente usar a IA por outro caminho: a função responde 403.
+2. Volte para "IA liberada": após reabrir o app (ou em até 30 s ao voltar a ele) os botões reaparecem.
+3. Conta nova: entra sem IA. A sua (administrador) sempre tem.
+4. Confirme que o Planejador de Estudos e o Planner Escolar continuam usando a IA normalmente (não devem ser afetados).
+
+COMO FOI TESTADO
+Navegador simulado com Supabase falso: administrador, usuário com IA, usuário sem IA (botões ocultos e chamada bloqueada no navegador com
+403), SQL V50 ausente (IA liberada como antes), sem rede (usa a última permissão), troca de permissão pela tela (chama nutri_set_ai com o
+usuário certo e recarrega), sem rolagem lateral, e regressão de V46 a V49. A sintaxe da Edge Function foi verificada, mas ela NÃO foi executada.
+NÃO TESTADO: o SQL no Supabase real, o deploy e o comportamento da função com a permissão real.

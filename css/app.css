@@ -183,3 +183,9 @@
     .sidebar-versao { display: block; text-align: center; font-size: 12px; color: #64748b; padding: .35rem 0 .1rem; }
     html.dark .sidebar-versao { color: #94a3b8; }
   }
+
+  /* V49: itens só para administrador ficam ocultos até o banco confirmar (falha "fechada") */
+  body:not(.is-admin) .admin-only { display: none !important; }
+
+  /* V50: recursos de IA só aparecem para quem tem IA liberada (o servidor também barra) */
+  body:not(.ia-allowed) .ia-only { display: none !important; }

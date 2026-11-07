@@ -86,3 +86,14 @@ Indique o arquivo ou a área: "Em `04-diario.js`, …" ou "Na aba Treinos, …".
 - `js/02a-merge.js`: `mergeTresVias(base, local, remoto)` (puro): listas por `id` (itens sem id, como favoritos antigos, por conteúdo), objetos (metas) campo a campo. Regras: só-um-lado vence; os dois editaram → vale o local; exclusão de um lado propaga se o outro não editou. `salvarBaseSync/lerBaseSync` (`<STORAGE_KEY>_base`), `guardarAntesDeMesclar` (`<STORAGE_KEY>_pre_merge`), `resumoMesclagem`.
 - `13-sync-supabase.js`: `mesclarComNuvem(remote)` é chamada quando a nuvem é mais nova que a última leitura ou o `update` condicional afeta 0 linhas; mescla, reagenda o envio (máx. 3 tentativas seguidas, depois cai em `conflitoSupabase` e a janela antiga). A base é gravada após envio bem-sucedido, após receber dados da nuvem (polling/login) e ao escolher "Baixar" na janela. No login com pendências locais, mescla em vez de só avisar.
 - Sem alteração no banco: `diary_data(user_id, data jsonb, updated_at)`.
+
+## V49
+- Filtros padrão: `#filtro-periodo` = `30d` (novo, em `04-diario.js`) e `#relatorio-periodo` = `90`.
+- `05-ia-refeicao.js`: `lerUsoTokens(resp)` lê `usageMetadata`/`modelVersion` de um clone da resposta; `registrarLogIA` grava `tokens_entrada/saida/total` em `ia_logs` e, se a coluna não existir, repete o insert sem tokens (`iaTokensDesativado`) em vez de desligar o log.
+- `js/18-usuarios.js` (`window.NutriUsuarios`): `refresh(force)` chama `nutri_is_admin()` (login/volta ao app); `carregar()` chama `nutri_all_users`, `nutri_ia_usage_summary(p_days)` e `nutri_ia_usage_recent`. `body.is-admin` mostra os itens `.admin-only`. `13-sync-supabase.js` chama `refresh(true)` no login e `reset()` no logout.
+- `SQL_USUARIOS_IA_V49.sql`: colunas de tokens em `ia_logs`, `nutri_app_admins` (RLS sem policy), funções `security definer` `nutri_*` com `grant` só a `authenticated`. Tokens antigos (nulos) são estimados no servidor.
+
+## V50 — permissão de IA por usuário
+- `SQL_ACESSO_IA_V50.sql`: `nutri_ai_access(user_id, allowed)` (RLS sem policy), `nutri_can_use_ai()`, `nutri_my_access()`, `nutri_set_ai()`, e `nutri_all_users()` recriada com `r_ai_allowed`. Semeia `allowed = true` para as contas existentes.
+- `dynamic-service/index.ts`: antes de chamar o Gemini, para modos diferentes de `edital`/`agenda`, chama `nutri_can_use_ai` com o token do usuário; `false` → 403; erro do banco → 503; função inexistente → comportamento antigo.
+- `18-usuarios.js`: `refresh()` usa `nutri_my_access` (cache em `nutri_acesso_<uid>`; fallback se a função não existir); `body.ia-allowed` mostra os `.ia-only`; `canUseAI()`; select "Sem IA / IA liberada" chama `nutri_set_ai`. `05-ia-refeicao.js` recusa a chamada no navegador se a permissão já foi negada.

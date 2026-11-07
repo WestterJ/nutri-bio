@@ -73,6 +73,16 @@ Deno.serve(async (req: Request) => {
     const erro = validar(body, modo);
     if (erro) return json({ error: erro }, 400);
 
+    // V50: permissão de IA do Diário (SQL_ACESSO_IA_V50.sql). Vale para os modos do Diário (refeicao, relatorio e leitura de PDF
+    // sem modo); 'edital' e 'agenda' pertencem a outros apps. Se a função do banco ainda não existe, mantém o comportamento antigo.
+    if (!['edital', 'agenda'].includes(nomeModo)) {
+      const { data: liberado, error: pErr } = await sb.rpc('nutri_can_use_ai');
+      const faltaFuncao = !!pErr && (pErr.code === 'PGRST202' || pErr.code === '42883' || /could not find|does not exist/i.test(pErr.message || ''));
+      if (pErr && faltaFuncao) console.warn('nutri_can_use_ai indisponível (rode SQL_ACESSO_IA_V50.sql):', pErr.message);
+      else if (pErr) return json({ error: 'Não foi possível verificar a permissão de IA. Tente novamente.' }, 503);
+      else if (liberado !== true) return json({ error: 'IA não liberada para esta conta. Peça ao administrador para liberar.' }, 403);
+    }
+
     // Limite diário por usuário (requer supabase/ai_usage.sql; sem a tabela, apenas avisa no log).
     // O uso só é registrado quando a IA responde com sucesso: falhas e timeouts não gastam o limite.
     const limite = Number(Deno.env.get('AI_DAILY_LIMIT') || 60);

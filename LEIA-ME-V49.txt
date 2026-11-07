@@ -1,0 +1,53 @@
+DIÁRIO NUTRICIONAL — V49 (sobre a V48; este pacote inclui também tudo da V46 a V48, então serve a partir da V45)
+
+O QUE MUDOU
+1. Diário: o filtro de período agora abre em "Últimos 30 dias" (hoje e os 29 dias anteriores). Nova opção na lista;
+   "Ano Atual", "Mês Atual" etc. continuam disponíveis.
+2. Relatório: o período abre em "Últimos 90 dias" (antes: "Todo o Período", que continua na lista).
+3. Nova aba "Usuários" (👥), só para o administrador (some do menu para as demais contas):
+   - Resumo do período (7, 30, 90 dias ou todo o histórico): chamadas de IA, falhas, tokens aproximados (entrada, saída, total).
+   - Por usuário: chamadas, falhas e tokens de cada conta (inclui quem nunca usou IA), com cadastro e último acesso.
+   - Por tipo de uso (refeição por texto, refeição por foto, bioimpedância, análise do relatório) e por modelo.
+   - Últimas 50 chamadas, com situação (OK, erro, timeout, cancelado).
+4. Registro de tokens: a partir da V49 cada chamada de IA grava os tokens que o Gemini informou (entrada, saída, total) em ia_logs.
+   Se a coluna ainda não existir (SQL não rodado), o app grava o log como antes, sem tokens, e não quebra.
+
+ORDEM PARA PUBLICAR (importante)
+1. Supabase > SQL Editor (projeto "Nutri e concursos"): rode SQL_USUARIOS_IA_V49.sql UMA vez (exige o SQL_IA_LOGS.sql da V42 já aplicado).
+   Ele cria 3 colunas de tokens em ia_logs, a tabela nutri_app_admins e as funções nutri_*.
+   ATENÇÃO: o administrador padrão é o e-mail westter@gmail.com (o mesmo do app de estudos). Se o seu for outro, troque o e-mail no SQL
+   antes de rodar. Depois da conferência (consulta comentada no fim do arquivo) o e-mail deve aparecer.
+2. Suba os arquivos do pacote para o GitHub, abra o app 2 vezes e confira "V49" (menu, no celular; cabeçalho, no computador).
+Se publicar antes de rodar o SQL: tudo funciona, mas a aba Usuários não aparece (ninguém é administrador ainda) e os tokens não são gravados.
+
+SOBRE OS TOKENS
+- Chamadas feitas a partir da V49 têm tokens reais (os informados pelo Gemini; o "pensamento" do modelo entra na saída).
+- Chamadas anteriores não têm tokens: a tela ESTIMA só a entrada (foto ≈ 1.300 tokens; texto ≈ tamanho do pedido ÷ 4) e a saída delas
+  conta 0. Valores estimados aparecem com "*". Chamadas que falharam contam 0.
+- O registro é feito pelo navegador de quem usa o app (um usuário mal-intencionado poderia deixar de registrar). Para uma contagem à prova
+  de adulteração, grave também dentro da Edge Function dynamic-service (não alterada nesta versão).
+- Esta tela só LÊ: não libera nem bloqueia IA por usuário (isso existe no app de estudos; posso fazer aqui se quiser).
+
+SINCRONIZAÇÃO COM A NUVEM (resposta à dúvida)
+- Envio: cerca de 1,2 segundo depois de cada alteração (várias alterações seguidas viram um único envio). Também há "Sincronizar agora".
+- Recebimento: ao voltar para o app (abrir a aba, voltar do segundo plano) e a cada 45 segundos enquanto o app está aberto e visível.
+  Com o app em segundo plano ou fechado não sincroniza; ao reabrir, sincroniza na hora.
+- Se este aparelho tem alterações ainda não enviadas, ele não baixa nada por cima: no envio, a V48 mescla com o que está na nuvem.
+
+ARQUIVOS (V46 a V49)
+index.html, service-worker.js, css/app.css, js/00-config.js, js/01-utils.js, js/02a-merge.js, js/03-nuvem.js, js/04-diario.js,
+js/05-ia-refeicao.js, js/06-medidas.js, js/07-bio.js, js/13-sync-supabase.js, js/14-treinos.js, js/15-navegacao.js, js/17-tema.js,
+js/18-usuarios.js (novo), js/99-main.js, icons/*, SQL_USUARIOS_IA_V49.sql (novo), ARQUITETURA.md, LEIA-ME-V46..V49.txt.
+
+COMO TESTAR
+1. Diário abre mostrando só os últimos 30 dias; Relatório abre em 90 dias; escolher outro período funciona.
+2. Entre como administrador: aparece "Usuários" no menu (no celular, em "Mais"). Com outra conta ela não aparece.
+3. Faça uma Texto IA no lançamento de uma refeição e uma análise no Relatório; em Usuários > Atualizar, as chamadas e os tokens
+   aparecem (sem "*" nas novas).
+4. No celular, a tela não deve rolar para os lados.
+
+COMO FOI TESTADO
+Navegador simulado (390 e 1024 px) com Supabase falso: filtros padrão (registros de hoje, 29 e 30 dias atrás, 45 e 100 dias atrás:
+só os dois primeiros no Diário), aba oculta antes do login e para não administrador, números e textos da tela, escape de HTML, log com
+tokens extraídos da resposta (1.200 entrada + 250 saída + 50 pensamento = 1.500 total), log sem coluna de tokens (grava sem tokens, sem desligar o log),
+sem rolagem lateral, e regressão da V48 (mesclagem). NÃO TESTADO: Supabase real (o SQL em si, as permissões), tokens reais do Gemini.

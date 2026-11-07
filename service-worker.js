@@ -5,7 +5,7 @@ const APP_SHELL = [
   './js/00-config.js', './js/01-utils.js', './js/02-estado.js', './js/02a-merge.js', './js/03-nuvem.js', './js/04-diario.js', './js/05-ia-refeicao.js',
   './js/06-medidas.js', './js/07-bio.js', './js/08-graficos.js', './js/09-ia-analise.js', './js/10-relatorio.js',
   './js/11-backup.js', './js/12-metas.js', './js/13-sync-supabase.js', './js/14-treinos.js', './js/15-navegacao.js',
-  './js/16-auth.js', './js/17-tema.js', './js/99-main.js',
+  './js/16-auth.js', './js/17-tema.js', './js/18-usuarios.js', './js/99-main.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'
 ];
 self.addEventListener('install', event => {

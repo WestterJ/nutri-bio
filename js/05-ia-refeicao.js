@@ -110,10 +110,32 @@
     });
     return out;
   }
+  // V49: tokens informados pela IA (usageMetadata do Gemini, repassado pela função). Sem isso, a tela Usuários estima.
+  async function lerUsoTokens(resp) {
+    try {
+      const j = await resp.clone().json();
+      const um = (j && j.usageMetadata) || {};
+      const n = v => (v === undefined || v === null || v === '' || !Number.isFinite(Number(v))) ? null : Math.round(Number(v));
+      const ent = n(um.promptTokenCount), cand = n(um.candidatesTokenCount), pens = n(um.thoughtsTokenCount), tot = n(um.totalTokenCount);
+      if (ent === null && tot === null) return { modelo_resposta: (j && j.modelVersion) || null };
+      let sai = (cand || 0) + (pens || 0);
+      if (tot !== null && ent !== null && tot > ent + sai) sai = tot - ent;
+      return { tokens_entrada: ent === null ? 0 : ent, tokens_saida: sai, tokens_total: tot !== null ? tot : (ent || 0) + sai, modelo_resposta: (j && j.modelVersion) || null };
+    } catch (_) { return {}; }
+  }
+  let iaTokensDesativado = false; // true se a coluna de tokens ainda não existe no banco (SQL_USUARIOS_IA_V49.sql não rodou)
   async function registrarLogIA(info) {
     if (iaLogDesativado || !supabaseClient || !supabaseUser) return;
     try {
-      const { error } = await supabaseClient.from('ia_logs').insert({ user_id: supabaseUser.id, ...info });
+      const { modelo_resposta, ...resto } = info;
+      if (!resto.modelo && modelo_resposta) resto.modelo = modelo_resposta;
+      if (iaTokensDesativado) { delete resto.tokens_entrada; delete resto.tokens_saida; delete resto.tokens_total; }
+      let { error } = await supabaseClient.from('ia_logs').insert({ user_id: supabaseUser.id, ...resto });
+      if (error && /tokens_/i.test(String(error.message || ''))) { // coluna ainda não criada: grava sem tokens
+        iaTokensDesativado = true;
+        delete resto.tokens_entrada; delete resto.tokens_saida; delete resto.tokens_total;
+        ({ error } = await supabaseClient.from('ia_logs').insert({ user_id: supabaseUser.id, ...resto }));
+      }
       if (error) {
         if (/ia_logs|relation|schema cache|does not exist/i.test(String(error.message || ''))) iaLogDesativado = true;
         console.warn('Log de IA não gravado:', error.message);
@@ -173,6 +195,9 @@
     }
   }
   async function chamarNutriGemini(payload, opcoes = {}) {
+    if (window.NutriUsuarios && !window.NutriUsuarios.canUseAI()) { // V50: o servidor também barra
+      throw Object.assign(new Error('IA não liberada para esta conta. Peça ao administrador para liberar.'), { status: 403 });
+    }
     const tipo = opcoes.tipo || (payload && payload.modo === 'relatorio' ? 'relatorio' : 'outro');
     const timeoutMs = opcoes.timeoutMs || (tipo === 'relatorio' ? 90000 : IA_TIMEOUT_REFEICAO_MS);
     const sinal = opcoes.signal;
@@ -182,7 +207,8 @@
     try {
       if (sinal && sinal.aborted) throw Object.assign(new Error('Cancelado.'), { cancelado: true });
       const resp = await chamarNutriGeminiUmaVez(payload, timeoutMs, sinal);
-      registrarLogIA({ tipo, status: 'ok', http_status: resp.status, duracao_ms: Date.now() - inicio, tamanho_kb: tamanhoKb, ...(resp.iaTiming || {}) });
+      const uso = await lerUsoTokens(resp);
+      registrarLogIA({ tipo, status: 'ok', http_status: resp.status, duracao_ms: Date.now() - inicio, tamanho_kb: tamanhoKb, ...(resp.iaTiming || {}), ...uso });
       return resp;
     } catch (e) {
       registrarLogIA({

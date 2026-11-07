@@ -37,6 +37,11 @@
         const ini7 = `${li.getFullYear()}-${pad(li.getMonth()+1)}-${pad(li.getDate())}`;
         return r.data >= ini7 && r.data <= hoje;
       }
+      if (tipo === '30d') { // V49: últimos 30 dias (hoje e os 29 anteriores)
+        const l30 = new Date(); l30.setDate(l30.getDate() - 29);
+        const ini30 = `${l30.getFullYear()}-${pad(l30.getMonth()+1)}-${pad(l30.getDate())}`;
+        return r.data >= ini30 && r.data <= hoje;
+      }
       if (tipo === 'mes') return r.data.slice(0, 7) === hoje.slice(0, 7);
       if (tipo === 'ano') return r.data.slice(0, 4) === anoAtual;
       if (tipo === 'personalizado') {
