@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 // Secrets: GEMINI_API_KEY (obrigatório). Opcionais: GEMINI_MODEL, AI_DAILY_LIMIT (padrão 60), ALLOWED_ORIGIN (padrão *),
 // GEMINI_THINKING_BUDGET (raciocínio interno dos demais modos; o modo "refeicao" sempre usa 0),
-// GEMINI_MODEL_FALLBACK (modelo reserva do modo "refeicao"; padrão gemini-3.1-flash-lite; "off" desativa).
+// GEMINI_MODEL_FALLBACK (modelo reserva dos modos "refeicao" e "nota"; padrão gemini-3.1-flash-lite; "off" desativa).
 const corsHeaders = {
   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -22,14 +22,20 @@ const BUDGET_MS = 125000;
 const TIMEOUT_RAPIDO_MS = 25000;
 // No modo rápido, se o modelo principal não responder neste tempo (ou der 404/429/500/503/504), a função tenta o modelo reserva.
 const TIMEOUT_PRIMARIO_MS = 12000;
+// Modos com reserva que não são rápidos (nota fiscal): tempo dado ao modelo principal antes de trocar para o reserva.
+const TIMEOUT_PRIMARIO_LONGO_MS = 45000;
 const ehTimeout = (e: unknown) => ['TimeoutError', 'AbortError'].includes((e as Error)?.name);
 // Modos de texto longo (sem anexos): limite de entrada (caracteres), de saída (tokens) e temperatura.
 // Modo com imagem: true aceita também anexos de imagem (texto curto + até 1 imagem), com saída maior.
-const MODOS: Record<string, { texto: number; tokens: number; temp: number; imagem?: boolean; rapido?: boolean }> = {
-  relatorio: { texto: 14000, tokens: 3500, temp: 0.3 }, // análise do diário alimentar
+// semRaciocinio: true desliga o raciocínio interno do modelo (extração de dados, mais rápido e sem gastar tokens de saída).
+// raciocinio: orçamento fixo (tokens) de raciocínio interno do modo; tem prioridade sobre o secret GEMINI_THINKING_BUDGET. Evita análises que passam de 90 s.
+// reserva: true permite trocar para o modelo reserva (sem novas tentativas no principal) quando ele estiver sobrecarregado ou indisponível.
+const MODOS: Record<string, { texto: number; tokens: number; temp: number; imagem?: boolean; rapido?: boolean; semRaciocinio?: boolean; raciocinio?: number; reserva?: boolean }> = {
+  relatorio: { texto: 14000, tokens: 3500, temp: 0.3, raciocinio: 1024 }, // análise do diário alimentar (V51: raciocínio limitado; sem isso levava 55 s a mais de 90 s)
   edital: { texto: 100000, tokens: 16000, temp: 0.1 },  // análise de edital (Planejador de Estudos)
   agenda: { texto: 4000, tokens: 8000, temp: 0.1, imagem: true }, // foto de calendário escolar (Planner Escolar)
   refeicao: { texto: 4000, tokens: 1200, temp: 0.2, imagem: true, rapido: true }, // Texto IA / Foto IA do lançamento de refeições
+  nota: { texto: 4000, tokens: 8000, temp: 0.1, imagem: true, semRaciocinio: true, reserva: true }, // foto de nota fiscal (Lista de Compras)
 };
 const MIMES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 
@@ -74,8 +80,8 @@ Deno.serve(async (req: Request) => {
     if (erro) return json({ error: erro }, 400);
 
     // V50: permissão de IA do Diário (SQL_ACESSO_IA_V50.sql). Vale para os modos do Diário (refeicao, relatorio e leitura de PDF
-    // sem modo); 'edital' e 'agenda' pertencem a outros apps. Se a função do banco ainda não existe, mantém o comportamento antigo.
-    if (!['edital', 'agenda'].includes(nomeModo)) {
+    // sem modo); 'edital', 'agenda' e 'nota' pertencem a outros apps. Se a função do banco ainda não existe, mantém o comportamento antigo.
+    if (!['edital', 'agenda', 'nota'].includes(nomeModo)) {
       const { data: liberado, error: pErr } = await sb.rpc('nutri_can_use_ai');
       const faltaFuncao = !!pErr && (pErr.code === 'PGRST202' || pErr.code === '42883' || /could not find|does not exist/i.test(pErr.message || ''));
       if (pErr && faltaFuncao) console.warn('nutri_can_use_ai indisponível (rode SQL_ACESSO_IA_V50.sql):', pErr.message);
@@ -99,7 +105,7 @@ Deno.serve(async (req: Request) => {
     const budgetMs = rapido ? TIMEOUT_RAPIDO_MS + 3000 : BUDGET_MS;
     const model = Deno.env.get('GEMINI_MODEL') || 'gemini-3.8-flash';
     const reservaEnv = Deno.env.get('GEMINI_MODEL_FALLBACK') ?? 'gemini-3.1-flash-lite';
-    const reserva = rapido && reservaEnv && reservaEnv.toLowerCase() !== 'off' && reservaEnv !== model ? reservaEnv : null;
+    const reserva = (rapido || modo?.reserva) && reservaEnv && reservaEnv.toLowerCase() !== 'off' && reservaEnv !== model ? reservaEnv : null;
     let modeloUsado = model;
     let motivo = '';
     // Server-Timing: pre = login + limite; gemini = tempo no Gemini; modelo = quem respondeu; reserva = por que o modelo reserva entrou.
@@ -112,8 +118,8 @@ Deno.serve(async (req: Request) => {
       signal: AbortSignal.timeout(Math.max(3000, Math.min(limiteMs, budgetMs - (Date.now() - inicio)))),
       body: JSON.stringify({ systemInstruction, contents: body.contents, generationConfig }),
     });
-    // Alta demanda (500/503/504): até 2 novas tentativas, desde que reste tempo no orçamento. No modo rápido não há novas tentativas (há o modelo reserva).
-    const esperas = rapido ? [] : [1500, 4000];
+    // Alta demanda (500/503/504): até 2 novas tentativas, desde que reste tempo no orçamento. Com modelo reserva (modo rápido e nota) não há novas tentativas: a troca de modelo é a resposta.
+    const esperas = (rapido || reserva) ? [] : [1500, 4000];
     const comRetry = async (fn: () => Promise<Response>) => {
       let r = await fn();
       for (const ms of esperas) {
@@ -125,9 +131,11 @@ Deno.serve(async (req: Request) => {
       return r;
     };
     // Configuração fixa no servidor: o navegador não controla tokens nem temperatura.
-    // Raciocínio interno: modo rápido sempre desligado (0); os demais seguem o secret GEMINI_THINKING_BUDGET, se existir.
+    // Raciocínio interno: modo rápido e modos com semRaciocinio sempre desligado (0); modos com "raciocinio" usam esse orçamento; os demais seguem o secret GEMINI_THINKING_BUDGET, se existir.
     const thinkingEnv = Deno.env.get('GEMINI_THINKING_BUDGET');
-    const thinkingConfig = rapido ? { thinkingBudget: 0 } : (thinkingEnv ? { thinkingBudget: Number(thinkingEnv) } : null);
+    const thinkingConfig = (rapido || modo?.semRaciocinio) ? { thinkingBudget: 0 }
+      : (modo?.raciocinio !== undefined ? { thinkingBudget: modo.raciocinio }
+      : (thinkingEnv ? { thinkingBudget: Number(thinkingEnv) } : null));
     const cfg: Record<string, unknown> = { responseMimeType: 'application/json', responseSchema: body.generationConfig.responseSchema, temperature: modo?.temp ?? 0.2, maxOutputTokens: modo?.tokens ?? 1800,
       ...(thinkingConfig ? { thinkingConfig } : {}) };
     const executar = async (m: string, limiteMs: number) => {
@@ -147,7 +155,7 @@ Deno.serve(async (req: Request) => {
     };
 
     let resp: Response | null = null;
-    try { resp = await executar(model, reserva ? TIMEOUT_PRIMARIO_MS : timeoutMs); }
+    try { resp = await executar(model, reserva ? (rapido ? TIMEOUT_PRIMARIO_MS : TIMEOUT_PRIMARIO_LONGO_MS) : timeoutMs); }
     catch (e) { if (!reserva || !ehTimeout(e)) throw e; motivo = 'timeout'; }
     if (reserva && (!resp || [404, 429, 500, 503, 504].includes(resp.status))) { // principal sem resposta: tenta o modelo reserva
       motivo = motivo || String(resp!.status);

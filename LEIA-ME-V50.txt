@@ -42,3 +42,9 @@ Navegador simulado com Supabase falso: administrador, usuário com IA, usuário 
 403), SQL V50 ausente (IA liberada como antes), sem rede (usa a última permissão), troca de permissão pela tela (chama nutri_set_ai com o
 usuário certo e recarrega), sem rolagem lateral, e regressão de V46 a V49. A sintaxe da Edge Function foi verificada, mas ela NÃO foi executada.
 NÃO TESTADO: o SQL no Supabase real, o deploy e o comportamento da função com a permissão real.
+
+CORREÇÃO IMPORTANTE (20/11) — SOBRE A EDGE FUNCTION
+A versão anterior deste pacote trazia um index.ts baseado em uma cópia antiga da função. A que está no ar no Supabase (v12/v13) é mais nova:
+tem o modo "nota" (Lista de Compras) e o modelo reserva. O index.ts deste pacote agora é a v13 + o bloco de permissão da V50, e já protege
+"nota", "edital" e "agenda" (não passam pela permissão do Diário). Implante este arquivo só junto com o SQL_ACESSO_IA_V50.sql.
+A v13 já está no ar (sem o bloco da V50): ela limita o raciocínio do modo "relatorio" (1.024 tokens) para a análise do relatório não estourar o tempo.

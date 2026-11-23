@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <!-- Diário Nutricional V50 (base V40): menu lateral, relatório por período, cardio sem tempo, IA com novas tentativas (V42: uma chamada só, contagem em segundos e log ia_logs). Ver ARQUITETURA.md. -->
+  <!-- Diário Nutricional V51 (base V40): menu lateral, relatório por período, cardio sem tempo, IA com novas tentativas (V42: uma chamada só, contagem em segundos e log ia_logs). Ver ARQUITETURA.md. -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Diário Nutricional V50</title>
+<title>Diário Nutricional V51</title>
 <script>try{var t=localStorage.getItem('nutri_tema');if(t==='escuro'||((!t||t==='auto')&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}</script>
 <meta name="color-scheme" content="light dark">
 <script src="https://cdn.tailwindcss.com"></script>
@@ -57,7 +57,7 @@
       <img src="icons/icon-192.png" alt="" width="40" height="40" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl shrink-0 ring-1 ring-white/25">
       <div class="min-w-0">
         <h1 class="text-base md:text-xl font-bold tracking-tight truncate">Diário Nutricional<span class="hidden sm:inline"> & Bioimpedância</span></h1>
-        <small id="app-version" class="hidden sm:block text-emerald-100 opacity-90 text-xs">Versão V50</small>
+        <small id="app-version" class="hidden sm:block text-emerald-100 opacity-90 text-xs">Versão V51</small>
       </div>
     </div>
     <div class="flex items-center gap-2 shrink-0">
@@ -81,6 +81,7 @@
       <button type="button" id="btn-tab-medidas" class="nav-btn" title="Medidas"><span class="nav-ico" aria-hidden="true">📏</span><span class="nav-label">Medidas</span></button>
       <button type="button" id="btn-tab-bio" class="nav-btn" title="Bioimpedância"><span class="nav-ico" aria-hidden="true">⚡</span><span class="nav-label">Bioimpedância</span></button>
       <button type="button" id="btn-tab-treinos" class="nav-btn" title="Treinos"><span class="nav-ico" aria-hidden="true">🏋️</span><span class="nav-label">Treinos</span></button>
+      <button type="button" id="btn-tab-cardapio" class="nav-btn" title="Cardápio da semana"><span class="nav-ico" aria-hidden="true">🗓️</span><span class="nav-label">Cardápio</span></button>
       <button type="button" id="btn-tab-graficos" class="nav-btn" title="Gráficos"><span class="nav-ico" aria-hidden="true">📈</span><span class="nav-label">Gráficos</span></button>
       <button type="button" id="btn-tab-relatorio" class="nav-btn" title="Relatório"><span class="nav-ico" aria-hidden="true">📄</span><span class="nav-label">Relatório</span></button>
       <button type="button" id="btn-tab-usuarios" class="nav-btn admin-only" title="Usuários"><span class="nav-ico" aria-hidden="true">👥</span><span class="nav-label">Usuários</span></button>
@@ -467,6 +468,38 @@
   </div>
 
   <!-- MODULO: CONFIGURAÇÕES, METAS & CHAVES (UNIFICADO) -->
+  <div id="view-cardapio" class="hidden space-y-4 max-w-4xl mx-auto min-w-0">
+    <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+      <div>
+        <h2 class="text-lg font-bold text-slate-800">🗓️ Cardápio da semana</h2>
+        <p class="text-xs text-slate-500">Sugestões montadas com as opções do plano da nutricionista (12/12/2025), as refeições que você mais registra no Diário e o seu objetivo. Cada refeição recebe um score de 0 a 100. As calorias e os macros das opções do plano são estimativas por porção.</p>
+      </div>
+      <div id="cd-alvos" class="text-xs text-slate-600"></div>
+      <p id="cd-aviso" class="text-xs text-amber-700 hidden"></p>
+      <details id="cd-ajustes" class="border border-slate-200 rounded-xl p-3">
+        <summary class="text-sm font-semibold cursor-pointer min-h-[32px]">Ajustes: objetivo, refeições, horários e dias de treino</summary>
+        <div class="space-y-3 mt-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div><label for="cd-objetivo" class="block text-xs font-semibold text-slate-600 mb-1">Objetivo</label>
+              <select id="cd-objetivo" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm min-h-[44px] sm:min-h-0"><option value="ganho">Ganho de massa</option><option value="perda">Perda de peso</option><option value="manutencao">Manutenção</option><option value="recomposicao">Recomposição corporal</option></select></div>
+            <div><label for="cd-periodo" class="block text-xs font-semibold text-slate-600 mb-1">Período</label>
+              <select id="cd-periodo" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm min-h-[44px] sm:min-h-0"><option value="hoje">Próximos 7 dias (a partir de hoje)</option><option value="proxima">Próxima semana (segunda a domingo)</option></select></div>
+          </div>
+          <div><div class="text-xs font-semibold text-slate-600 mb-1">Dias de treino <span class="font-normal text-slate-500">(incluem o pré-treino às 18h do plano; sugeridos pelos seus treinos recentes)</span></div><div id="cd-treino" class="flex flex-wrap gap-2"></div></div>
+          <div><div class="text-xs font-semibold text-slate-600 mb-1">Refeições e horários <span class="font-normal text-slate-500">(horários sugeridos; só o pré-treino das 18h vem do plano)</span></div><div id="cd-slots" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div></div>
+        </div>
+      </details>
+      <button type="button" id="cd-gerar" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-[#003a70] text-white font-bold shadow min-h-[44px]">✨ Gerar cardápio da semana</button>
+    </section>
+    <p id="cd-vazio" class="text-sm text-slate-500 text-center py-6">Toque em “Gerar cardápio da semana” para montar as sugestões. Depois você pode trocar, editar, travar e registrar cada refeição.</p>
+    <section id="cd-resultado" class="hidden space-y-3">
+      <div id="cd-semana" class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"></div>
+      <div id="cd-dias" class="cd-dias" role="tablist" aria-label="Dias da semana"></div>
+      <div id="cd-dia" class="space-y-3"></div>
+      <p class="text-[11px] text-slate-500">Score: calorias (35) + proteína (30) + qualidade (20) + semelhança com o plano (15). Frituras, doces e ultraprocessados perdem pontos. Sugestão de apoio: não substitui a orientação da nutricionista.</p>
+    </section>
+  </div>
+
   <div id="view-usuarios" class="hidden space-y-6 max-w-5xl mx-auto">
     <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
@@ -540,6 +573,31 @@
 </div>
 
 <!-- Custom Confirmation Modal -->
+<dialog id="modal-cd-trocar" class="rounded-2xl p-0 w-full max-w-lg shadow-2xl backdrop:bg-slate-900/50">
+  <div class="p-5 space-y-3">
+    <h3 id="cd-trocar-titulo" class="font-bold text-lg text-slate-800">Trocar refeição</h3>
+    <p class="text-xs text-slate-500">As melhores opções para esta refeição, ordenadas pelo score. Toque em uma para trocar.</p>
+    <div id="cd-trocar-lista" class="space-y-2 max-h-[55vh] overflow-y-auto"></div>
+    <div class="flex justify-between gap-2 pt-1"><button type="button" id="cd-trocar-embaralhar" class="px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold min-h-[44px]">🔀 Outras opções</button><button type="button" id="cd-trocar-fechar" class="px-4 py-2 bg-slate-700 text-white rounded-lg text-sm font-bold min-h-[44px]">Fechar</button></div>
+  </div>
+</dialog>
+
+<dialog id="modal-cd-editar" class="rounded-2xl p-0 w-full max-w-lg shadow-2xl backdrop:bg-slate-900/50">
+  <div class="p-5 space-y-3">
+    <h3 id="cd-ed-titulo" class="font-bold text-lg text-slate-800">Editar refeição</h3>
+    <div><label for="cd-ed-hora" class="block text-xs font-semibold text-slate-600 mb-1">Horário</label><input type="time" id="cd-ed-hora" class="px-3 py-2 border border-slate-300 rounded-lg text-sm min-h-[44px]"></div>
+    <div><label for="cd-ed-alimentos" class="block text-xs font-semibold text-slate-600 mb-1">Alimentos</label><textarea id="cd-ed-alimentos" rows="4" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></textarea></div>
+    <div class="grid grid-cols-2 gap-3">
+      <div><label for="cd-ed-kcal" class="block text-xs font-semibold text-slate-600 mb-1">Calorias (kcal)</label><input type="number" id="cd-ed-kcal" inputmode="decimal" min="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm min-h-[44px]"></div>
+      <div><label for="cd-ed-prot" class="block text-xs font-semibold text-slate-600 mb-1">Proteína (g)</label><input type="number" id="cd-ed-prot" inputmode="decimal" min="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm min-h-[44px]"></div>
+      <div><label for="cd-ed-carb" class="block text-xs font-semibold text-slate-600 mb-1">Carboidratos (g)</label><input type="number" id="cd-ed-carb" inputmode="decimal" min="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm min-h-[44px]"></div>
+      <div><label for="cd-ed-gord" class="block text-xs font-semibold text-slate-600 mb-1">Gorduras (g)</label><input type="number" id="cd-ed-gord" inputmode="decimal" min="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm min-h-[44px]"></div>
+    </div>
+    <div id="cd-ed-previa" class="border border-slate-200 rounded-xl p-3 bg-slate-50"></div>
+    <div class="flex justify-end gap-2 pt-1"><button type="button" id="cd-ed-cancelar" class="px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold min-h-[44px]">Cancelar</button><button type="button" id="cd-ed-salvar" class="px-4 py-2 bg-[#003a70] text-white rounded-lg text-sm font-bold min-h-[44px]">Salvar</button></div>
+  </div>
+</dialog>
+
 <dialog id="modal-confirm" class="rounded-2xl p-0 w-full max-w-sm shadow-2xl backdrop:bg-slate-900/50">
   <div class="p-6 text-center space-y-4">
     <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-amber-100 text-amber-600 mb-4">
@@ -815,6 +873,8 @@
 <script src="js/16-auth.js"></script>
 <script src="js/17-tema.js"></script>
 <script src="js/18-usuarios.js"></script>
+<script src="js/19a-cardapio-motor.js"></script>
+<script src="js/19b-cardapio-ui.js"></script>
 <script src="js/99-main.js"></script>
 </body>
 </html>

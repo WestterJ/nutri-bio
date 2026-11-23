@@ -4,7 +4,7 @@
   const tabs = {
     'btn-tab-diario': 'view-diario', 'btn-tab-metas-nutri': 'view-metas-nutri', 'btn-tab-medidas': 'view-medidas',
     'btn-tab-bio': 'view-bio', 'btn-tab-treinos': 'view-treinos', 'btn-tab-graficos': 'view-graficos',
-    'btn-tab-relatorio': 'view-relatorio', 'btn-tab-usuarios': 'view-usuarios', 'btn-tab-metas': 'view-metas'
+    'btn-tab-relatorio': 'view-relatorio', 'btn-tab-usuarios': 'view-usuarios', 'btn-tab-cardapio': 'view-cardapio', 'btn-tab-metas': 'view-metas'
   };
 
   function abrirAba(btnId) {
@@ -22,6 +22,7 @@
     if (btnId === 'btn-tab-metas-nutri') carregarMetasForm();
     if (btnId === 'btn-tab-treinos') renderTreinos();
     if (btnId === 'btn-tab-usuarios' && window.NutriUsuarios) window.NutriUsuarios.carregar();
+    if (btnId === 'btn-tab-cardapio' && window.CardapioUI) window.CardapioUI.abrir();
   }
   Object.keys(tabs).forEach(btnId => { $('#' + btnId).onclick = () => abrirAba(btnId); });
 

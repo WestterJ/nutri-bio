@@ -189,3 +189,12 @@
 
   /* V50: recursos de IA só aparecem para quem tem IA liberada (o servidor também barra) */
   body:not(.ia-allowed) .ia-only { display: none !important; }
+
+  /* V51: cardápio da semana */
+  #view-cardapio { min-width: 0; }
+  .cd-dias { display: flex; gap: .5rem; overflow-x: auto; padding-bottom: .25rem; max-width: 100%; }
+  .cd-btn { min-height: 44px; border: 1px solid #cbd5e1; border-radius: .6rem; background: #fff; color: #334155; font-size: 12px; font-weight: 700; }
+  .cd-btn:hover { background: #f1f5f9; }
+  .cd-btn-ok { background: #ecfdf5; border-color: #6ee7b7; color: #065f46; }
+  html.dark .cd-btn { background: #1e293b; border-color: #475569; color: #e2e8f0; }
+  html.dark .cd-btn-ok { background: #064e3b; border-color: #047857; color: #d1fae5; }
