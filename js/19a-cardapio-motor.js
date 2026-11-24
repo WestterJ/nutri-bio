@@ -28,43 +28,86 @@
   // Tolerância de calorias por objetivo (fração abaixo / acima do esperado da refeição sem perder pontos).
   const TOL = { ganho: { baixo: 0.20, alto: 0.35 }, perda: { baixo: 0.30, alto: 0.10 }, manutencao: { baixo: 0.15, alto: 0.15 }, recomposicao: { baixo: 0.18, alto: 0.18 } };
 
-  // ---------- ingredientes do plano (valores aproximados por porção, estilo tabela TACO; descrição = medida do plano) ----------
-  // [descrição, kcal, proteína g, carboidrato g, gordura g, vermelha?]
-  const ING = {
-    paoFrances: ['Meio pão francês', 75, 2.4, 14.5, 0.9], paoForma: ['1 fatia de pão de forma sem açúcar', 65, 2.1, 12, 0.9],
-    paoFranc1: ['1 pão francês', 150, 4.8, 29, 1.8], paoInt: ['1 fatia de pão integral', 62, 2.6, 11, 1], paoInt2: ['2 fatias de pão integral', 124, 5.2, 22, 2],
-    tapioca: ['Tapioca (2 col. sopa de goma, 30 g) com 1 col. sobremesa de chia', 124, 0.8, 27, 1.5], tapioca3: ['Tapioca (3 col. sopa de goma) com 1 col. sopa de chia', 199, 1.7, 41, 3.1],
-    peta: ['Peta (4 unidades médias)', 100, 1, 18, 2.5],
-    ovos2: ['2 ovos', 144, 12.6, 0.8, 10], ovos3: ['3 ovos cozidos', 216, 18.9, 1.2, 15], frango2: ['2 col. sopa de frango desfiado', 66, 12.4, 0, 1.5],
-    queijoFresco: ['1 fatia de queijo fresco (30 g)', 80, 5.4, 1, 6], mucarela: ['1 fatia de muçarela', 60, 4.3, 0.5, 4.5], requeijao: ['1 col. sobremesa de requeijão light', 22, 1.2, 1, 1.5],
-    fruta: ['1 porção de fruta', 60, 0.8, 15, 0.2], farelo1: ['1 col. sopa de farelo de aveia', 25, 1.7, 6.6, 0.7], farelo2: ['2 col. sopa de farelo de aveia', 50, 3.4, 13.2, 1.4],
-    cafe: ['Café ou chá sem açúcar', 2, 0.1, 0, 0], coalhada: ['1 xícara de coalhada triplo zero', 70, 8, 8, 0], iogurte: ['1 pote de iogurte desnatado natural', 80, 6, 10, 0.5],
-    whey15: ['Meia dose de whey isolado (15 g)', 55, 13.5, 0.5, 0.2], mix: ['1 col. sopa de mix funcional', 62, 2.6, 3.5, 4.8],
-    omelete: ['Omelete de 2 ovos com vegetais à vontade', 180, 13.6, 4, 14], leiteCacau: ['100 mL de leite desnatado com 1 col. chá de cacau 50%', 43, 4, 6, 0.5],
-    pateFrango: ['Patê de frango (3 col. sopa de frango, requeijão light e cenoura)', 130, 19.5, 2, 4], pateAtum: ['Patê de atum (3 col. sopa de atum ralado, requeijão light e cenoura)', 125, 19, 2, 4.5],
-    reqZero: ['1 col. sopa de requeijão zero lactose light', 30, 1.6, 1.4, 2],
-    shakeIog: ['Shake: iogurte desnatado zero lactose, 2 col. sopa de farelo de aveia, fruta e 15 g de whey isolado', 245, 23.7, 38.7, 2.3],
-    shakeLeite: ['Shake: 200 mL de leite desnatado zero lactose, 2 col. sopa de farelo de aveia, fruta e 15 g de whey isolado', 235, 24.5, 38.7, 2],
-    pre1: ['1 porção de fruta com 80 g de iogurte desnatado zero lactose e 1 col. sobremesa de aveia em flocos finos', 125, 4.6, 24.1, 0.9], geleia: ['1 col. sopa de geleia de frutas 100% fruta', 40, 0.1, 10, 0],
-    salada: ['Salada crua e cozida (meio prato)', 40, 2.5, 8, 0.3], legumes: ['Legumes cozidos com 1 col. sobremesa de azeite', 110, 1.5, 8, 8.3],
-    arroz: ['Arroz (2 col. de servir rasas, 100 g)', 128, 2.6, 27, 0.5], mandioca: ['Mandioca cozida (100 g)', 125, 0.6, 30, 0.3], batata: ['Batata inglesa cozida (1 pequena, 120 g)', 92, 2.4, 21, 0.1],
-    batataDoce: ['Batata-doce cozida (3 fatias, 120 g)', 92, 1.4, 22, 0.1], macarrao: ['Macarrão cozido (1 pegador, 80 g)', 125, 4.3, 25, 0.6], milho: ['Milho refogado (4 col. sopa, 100 g)', 110, 3.2, 19, 2.5],
-    bife: ['Bife magro grelhado (120 g)', 263, 43, 0, 8.8, 1], file: ['Filé de frango grelhado (120 g)', 191, 38, 0, 3], lombo: ['Lombo suíno magro (100 g)', 200, 32, 0, 7.5],
-    peixe: ['Filé de peixe grelhado (120 g)', 154, 30, 0, 3], almondega: ['3 almôndegas médias (120 g)', 230, 22, 8, 12, 1], moida: ['Carne moída magra (5 col. sopa, 120 g)', 230, 30, 0, 12, 1],
-    coxa: ['Coxa e sobrecoxa assadas sem pele (150 g)', 270, 33, 0, 14.7], panela: ['Carne de panela magra (120 g)', 240, 34, 0, 10.5, 1],
-    feijao: ['Feijão carioca (1 concha média, 86 g)', 65, 4.1, 11.8, 0.4], graoBico: ['Grão-de-bico (meia concha, 45 g)', 74, 3.9, 12, 1.1], lentilha: ['Lentilha (meia concha, 60 g)', 70, 5, 12, 0.4],
-    espetinho: ['1 espetinho magro assado', 170, 26, 0, 7, 1], coalho: ['1 espetinho de queijo coalho', 150, 10, 1, 11], mand1: ['1 col. de servir de mandioca cozida', 75, 0.4, 18, 0.2],
-    frango3: ['3 col. sopa de frango desfiado', 99, 18.6, 0, 2.3], vegs: ['Tomate, cenoura e brócolis', 30, 1.5, 6, 0.3],
-    panqueca: ['Panqueca de aveia salgada', 150, 9, 8, 7.8], recFrango: ['Recheio de 4 col. sopa de frango desfiado', 132, 24.8, 0, 3], recCarne: ['Recheio de 4 col. sopa de carne moída', 152, 20, 0, 7.5, 1],
-    macSalada: ['1 col. de servir cheia de macarrão cozido', 94, 3.2, 19, 0.5], saladaCrua: ['1 prato de sobremesa de salada crua', 40, 2.5, 8, 0.3], rap10: ['1 rap 10', 130, 3.5, 24, 2.5],
-    atum4: ['4 col. sopa de atum ralado em água', 94, 20, 0, 0.8], frango4: ['4 col. sopa de frango desfiado', 132, 24.8, 0, 3], carne4: ['4 col. sopa de carne desfiada', 160, 24, 0, 7, 1]
+  // ---------- catálogo de alimentos padronizados (valores aproximados, estilo tabela TACO) ----------
+  // id: [nome, grupo, unidade, passo, quantidade padrão, kcal, prot, carb, gord, referência da quantidade (100 = por 100 g/mL; 1 = por unidade), vermelha?]
+  const GRUPOS = { prot: 'Carnes, peixes e ovos', lat: 'Laticínios e whey', carb: 'Carboidratos', leg: 'Leguminosas', veg: 'Frutas e vegetais', ext: 'Gorduras, sementes e extras', out: 'Outros (vida real)' };
+  const CAT = {
+    frango: ['Frango grelhado (peito)', 'prot', 'g', 10, 120, 159, 32, 0, 2.5, 100], patinho: ['Patinho grelhado', 'prot', 'g', 10, 120, 219, 35.9, 0, 7.3, 100, 1],
+    contra: ['Contrafilé grelhado', 'prot', 'g', 10, 120, 278, 32, 0, 16, 100, 1], moida: ['Carne moída refogada', 'prot', 'g', 10, 100, 192, 25, 0, 10, 100, 1],
+    panela: ['Carne de panela magra', 'prot', 'g', 10, 120, 200, 28.3, 0, 8.8, 100, 1], lombo: ['Lombo suíno assado', 'prot', 'g', 10, 100, 200, 32, 0, 7.5, 100],
+    peixe: ['Peixe grelhado (tilápia)', 'prot', 'g', 10, 120, 128, 25, 0, 2.5, 100], coxa: ['Coxa e sobrecoxa assadas sem pele', 'prot', 'g', 10, 150, 180, 22, 0, 9.8, 100],
+    atum: ['Atum em água', 'prot', 'g', 10, 80, 118, 25, 0, 1, 100], frangoDesf: ['Frango desfiado', 'prot', 'col. sopa', 1, 2, 33, 6.2, 0, 0.75, 1],
+    carneDesf: ['Carne desfiada', 'prot', 'col. sopa', 1, 4, 40, 6, 0, 1.75, 1, 1], espetinho: ['Espetinho de carne magra', 'prot', 'un', 1, 1, 170, 26, 0, 7, 1, 1],
+    almondega: ['Almôndega média', 'prot', 'un', 1, 3, 77, 7.3, 2.7, 4, 1, 1], ovo: ['Ovo', 'prot', 'un', 1, 2, 72, 6.3, 0.4, 5, 1],
+    queijoFresco: ['Queijo fresco (fatia de 30 g)', 'lat', 'fatia', 1, 1, 80, 5.4, 1, 6, 1], mucarela: ['Muçarela', 'lat', 'fatia', 1, 1, 60, 4.3, 0.5, 4.5, 1],
+    coalho: ['Queijo coalho (espetinho)', 'lat', 'un', 1, 1, 150, 10, 1, 11, 1], requeijao: ['Requeijão light', 'lat', 'col. sobremesa', 1, 1, 22, 1.2, 1, 1.5, 1],
+    reqZero: ['Requeijão zero lactose light', 'lat', 'col. sopa', 1, 1, 30, 1.6, 1.4, 2, 1], iogDesn: ['Iogurte desnatado natural', 'lat', 'pote', 0.5, 1, 80, 6, 10, 0.5, 1],
+    iogGrego: ['Iogurte grego (100 g)', 'lat', 'pote', 0.5, 1, 100, 8, 6, 5, 1], coalhada: ['Coalhada triplo zero', 'lat', 'xícara', 0.5, 1, 70, 8, 8, 0, 1],
+    leite: ['Leite desnatado', 'lat', 'mL', 50, 200, 35, 3.4, 5, 0.1, 100], whey: ['Whey isolado (scoop de 30 g)', 'lat', 'scoop', 0.5, 0.5, 110, 27, 1, 0.4, 1],
+    arroz: ['Arroz cozido (branco ou integral)', 'carb', 'g', 10, 100, 128, 2.6, 27, 0.5, 100], mandioca: ['Mandioca cozida', 'carb', 'g', 10, 100, 125, 0.6, 30, 0.3, 100],
+    batata: ['Batata inglesa cozida', 'carb', 'g', 10, 120, 77, 2, 17.5, 0.1, 100], batataDoce: ['Batata-doce cozida', 'carb', 'g', 10, 120, 77, 1.2, 18.3, 0.1, 100],
+    macarrao: ['Macarrão cozido', 'carb', 'g', 10, 80, 156, 5.4, 31, 0.8, 100], milho: ['Milho refogado', 'carb', 'g', 10, 100, 110, 3.2, 19, 2.5, 100],
+    paoFrances: ['Pão francês', 'carb', 'un', 0.5, 1, 150, 4.8, 29, 1.8, 1], paoForma: ['Pão de forma sem açúcar', 'carb', 'fatia', 1, 1, 65, 2.1, 12, 0.9, 1], paoInt: ['Pão integral', 'carb', 'fatia', 1, 1, 62, 2.6, 11, 1, 1],
+    tapiocaGoma: ['Goma de tapioca', 'carb', 'col. sopa', 1, 2, 50, 0, 12.4, 0, 1], peta: ['Peta', 'carb', 'un', 1, 4, 25, 0.25, 4.5, 0.6, 1], rap10: ['Rap 10', 'carb', 'un', 1, 1, 130, 3.5, 24, 2.5, 1],
+    aveiaFlocos: ['Aveia em flocos finos', 'carb', 'col. sopa', 1, 1, 39, 1.4, 6.7, 0.8, 1], farelo: ['Farelo de aveia', 'carb', 'col. sopa', 1, 1, 25, 1.7, 6.6, 0.7, 1], panqueca: ['Panqueca de aveia salgada', 'carb', 'un', 1, 1, 150, 9, 8, 7.8, 1],
+    feijao: ['Feijão carioca cozido', 'leg', 'g', 10, 86, 76, 4.8, 13.7, 0.5, 100], grao: ['Grão-de-bico cozido', 'leg', 'g', 10, 45, 164, 8.7, 27, 2.4, 100], lentilha: ['Lentilha cozida', 'leg', 'g', 10, 60, 116, 8.3, 20, 0.7, 100],
+    fruta: ['Fruta (1 porção)', 'veg', 'porção', 0.5, 1, 60, 0.8, 15, 0.2, 1], banana: ['Banana', 'veg', 'un', 0.5, 1, 60, 0.8, 15.5, 0.2, 1], maca: ['Maçã pequena', 'veg', 'un', 0.5, 1, 55, 0.2, 14.8, 0.2, 1],
+    salada: ['Salada crua e cozida', 'veg', 'g', 10, 150, 27, 1.7, 5.3, 0.2, 100], legumes: ['Legumes cozidos', 'veg', 'g', 10, 150, 27, 1, 5.3, 0.2, 100],
+    azeiteSob: ['Azeite extra virgem', 'ext', 'col. sobremesa', 1, 1, 70, 0, 0, 8, 1], azeiteCha: ['Fio de azeite', 'ext', 'col. chá', 1, 1, 36, 0, 0, 4, 1], mix: ['Mix funcional', 'ext', 'col. sopa', 1, 1, 62, 2.6, 3.5, 4.8, 1],
+    chia: ['Chia', 'ext', 'col. sopa', 0.5, 1, 49, 1.7, 4.2, 3.1, 1], cacau: ['Cacau em pó 50%', 'ext', 'col. chá', 1, 1, 8, 0.6, 1, 0.4, 1], geleia: ['Geleia 100% fruta', 'ext', 'col. sopa', 1, 1, 40, 0.1, 10, 0, 1],
+    pastaAmend: ['Pasta de amendoim', 'ext', 'col. sopa', 1, 1, 90, 3.8, 3, 7.5, 1], cafe: ['Café ou chá sem açúcar', 'ext', 'xícara', 1, 1, 2, 0.1, 0, 0, 1], acucar: ['Açúcar', 'ext', 'col. chá', 1, 1, 20, 0, 5, 0, 1],
+    coxinha: ['Coxinha', 'out', 'un', 1, 1, 250, 9, 28, 11, 1], pastel: ['Pastel frito', 'out', 'un', 1, 1, 300, 9, 30, 16, 1], paoQueijo: ['Pão de queijo', 'out', 'un', 1, 1, 85, 2, 8, 5, 1],
+    brigadeiro: ['Brigadeiro', 'out', 'un', 1, 1, 90, 1, 12, 4, 1], bolo: ['Bolo simples', 'out', 'fatia', 1, 1, 190, 3, 30, 6, 1], refri: ['Refrigerante', 'out', 'lata', 1, 1, 140, 0, 35, 0, 1]
   };
-  const macrosDe = keys => keys.reduce((a, k) => { const i = ING[k]; if (!i) throw new Error('ingrediente desconhecido: ' + k); a.kcal += i[1]; a.prot += i[2]; a.carb += i[3]; a.gord += i[4]; a.vermelha = a.vermelha || !!i[5]; a.texto.push(i[0]); return a; }, { kcal: 0, prot: 0, carb: 0, gord: 0, vermelha: false, texto: [] });
+  const fmtQ = q => String(Math.round(q * 100) / 100).replace('.', ',');
+  const catInfo = id => { const c = CAT[id]; if (!c) throw new Error('alimento desconhecido: ' + id); return { id, nome: c[0], grupo: c[1], un: c[2], passo: c[3], padrao: c[4], k: c[5], p: c[6], c: c[7], g: c[8], ref: c[9], vermelha: !!c[10] }; };
+  // itens: [{ id, q }] → macros somados e texto "Nome (q un)"
+  function macrosItens(itens) {
+    return (itens || []).reduce((a, it) => { const c = CAT[it.id]; if (!c) return a; const f = num(it.q) / c[9]; a.kcal += c[5] * f; a.prot += c[6] * f; a.carb += c[7] * f; a.gord += c[8] * f; if (c[10] && num(it.q) > 0) a.vermelha = true; return a; }, { kcal: 0, prot: 0, carb: 0, gord: 0, vermelha: false });
+  }
+  const textoItens = itens => (itens || []).filter(it => CAT[it.id] && num(it.q) > 0).map(it => `${CAT[it.id][0]} (${fmtQ(num(it.q))} ${CAT[it.id][2]})`).join(' + ');
+
+  // ---------- ingredientes do plano: [descrição na medida do plano, itens padronizados] ----------
+  const I = (id, q) => ({ id, q });
+  const ING = {
+    paoFrances: ['Meio pão francês', [I('paoFrances', 0.5)]], paoForma: ['1 fatia de pão de forma sem açúcar', [I('paoForma', 1)]], paoFranc1: ['1 pão francês', [I('paoFrances', 1)]],
+    paoInt: ['1 fatia de pão integral', [I('paoInt', 1)]], paoInt2: ['2 fatias de pão integral', [I('paoInt', 2)]],
+    tapioca: ['Tapioca (2 col. sopa de goma, 30 g) com 1 col. sobremesa de chia', [I('tapiocaGoma', 2), I('chia', 0.5)]], tapioca3: ['Tapioca (3 col. sopa de goma) com 1 col. sopa de chia', [I('tapiocaGoma', 3), I('chia', 1)]],
+    peta: ['Peta (4 unidades médias)', [I('peta', 4)]], ovos2: ['2 ovos', [I('ovo', 2)]], ovos3: ['3 ovos cozidos', [I('ovo', 3)]], frango2: ['2 col. sopa de frango desfiado', [I('frangoDesf', 2)]],
+    queijoFresco: ['1 fatia de queijo fresco (30 g)', [I('queijoFresco', 1)]], mucarela: ['1 fatia de muçarela', [I('mucarela', 1)]], requeijao: ['1 col. sobremesa de requeijão light', [I('requeijao', 1)]],
+    fruta: ['1 porção de fruta', [I('fruta', 1)]], farelo1: ['1 col. sopa de farelo de aveia', [I('farelo', 1)]], farelo2: ['2 col. sopa de farelo de aveia', [I('farelo', 2)]],
+    cafe: ['Café ou chá sem açúcar', [I('cafe', 1)]], coalhada: ['1 xícara de coalhada triplo zero', [I('coalhada', 1)]], iogurte: ['1 pote de iogurte desnatado natural', [I('iogDesn', 1)]],
+    whey15: ['Meia dose de whey isolado (15 g)', [I('whey', 0.5)]], mix: ['1 col. sopa de mix funcional', [I('mix', 1)]],
+    omelete: ['Omelete de 2 ovos com vegetais à vontade', [I('ovo', 2), I('legumes', 50), I('azeiteCha', 1)]], leiteCacau: ['100 mL de leite desnatado com 1 col. chá de cacau 50%', [I('leite', 100), I('cacau', 1)]],
+    pateFrango: ['Patê de frango (3 col. sopa de frango, requeijão light e cenoura)', [I('frangoDesf', 3), I('requeijao', 1), I('legumes', 20)]], pateAtum: ['Patê de atum (atum ralado, requeijão light e cenoura)', [I('atum', 60), I('requeijao', 1), I('legumes', 20)]],
+    reqZero: ['1 col. sopa de requeijão zero lactose light', [I('reqZero', 1)]],
+    shakeIog: ['Shake: iogurte desnatado zero lactose, 2 col. sopa de farelo de aveia, fruta e 15 g de whey isolado', [I('iogDesn', 1), I('farelo', 2), I('fruta', 1), I('whey', 0.5)]],
+    shakeLeite: ['Shake: 200 mL de leite desnatado zero lactose, 2 col. sopa de farelo de aveia, fruta e 15 g de whey isolado', [I('leite', 200), I('farelo', 2), I('fruta', 1), I('whey', 0.5)]],
+    pre1: ['1 porção de fruta com 80 g de iogurte desnatado zero lactose e 1 col. sobremesa de aveia em flocos finos', [I('fruta', 1), I('iogDesn', 0.5), I('aveiaFlocos', 0.7)]], geleia: ['1 col. sopa de geleia de frutas 100% fruta', [I('geleia', 1)]],
+    salada: ['Salada crua e cozida (meio prato)', [I('salada', 150)]], legumes: ['Legumes cozidos com 1 col. sobremesa de azeite', [I('legumes', 150), I('azeiteSob', 1)]],
+    arroz: ['Arroz (2 col. de servir rasas, 100 g)', [I('arroz', 100)]], mandioca: ['Mandioca cozida (100 g)', [I('mandioca', 100)]], batata: ['Batata inglesa cozida (1 pequena, 120 g)', [I('batata', 120)]],
+    batataDoce: ['Batata-doce cozida (3 fatias, 120 g)', [I('batataDoce', 120)]], macarrao: ['Macarrão cozido (1 pegador, 80 g)', [I('macarrao', 80)]], milho: ['Milho refogado (4 col. sopa, 100 g)', [I('milho', 100)]],
+    bife: ['Bife magro grelhado (120 g)', [I('patinho', 120)]], file: ['Filé de frango grelhado (120 g)', [I('frango', 120)]], lombo: ['Lombo suíno magro (100 g)', [I('lombo', 100)]],
+    peixe: ['Filé de peixe grelhado (120 g)', [I('peixe', 120)]], almondega: ['3 almôndegas médias (120 g)', [I('almondega', 3)]], moida: ['Carne moída magra (5 col. sopa, 120 g)', [I('moida', 120)]],
+    coxa: ['Coxa e sobrecoxa assadas sem pele (150 g)', [I('coxa', 150)]], panela: ['Carne de panela magra (120 g)', [I('panela', 120)]],
+    feijao: ['Feijão carioca (1 concha média, 86 g)', [I('feijao', 86)]], graoBico: ['Grão-de-bico (meia concha, 45 g)', [I('grao', 45)]], lentilha: ['Lentilha (meia concha, 60 g)', [I('lentilha', 60)]],
+    espetinho: ['1 espetinho magro assado', [I('espetinho', 1)]], coalho: ['1 espetinho de queijo coalho', [I('coalho', 1)]], mand1: ['1 col. de servir de mandioca cozida', [I('mandioca', 60)]],
+    frango3: ['3 col. sopa de frango desfiado', [I('frangoDesf', 3)]], vegs: ['Tomate, cenoura e brócolis', [I('legumes', 100)]],
+    panqueca: ['Panqueca de aveia salgada', [I('panqueca', 1)]], recFrango: ['Recheio de 4 col. sopa de frango desfiado', [I('frangoDesf', 4)]], recCarne: ['Recheio de 4 col. sopa de carne moída', [I('carneDesf', 4)]],
+    macSalada: ['1 col. de servir cheia de macarrão cozido', [I('macarrao', 60)]], saladaCrua: ['1 prato de sobremesa de salada crua', [I('salada', 100)]], rap10: ['1 rap 10', [I('rap10', 1)]],
+    atum4: ['4 col. sopa de atum ralado em água', [I('atum', 80)]], frango4: ['4 col. sopa de frango desfiado', [I('frangoDesf', 4)]], carne4: ['4 col. sopa de carne desfiada', [I('carneDesf', 4)]]
+  };
+  const macrosDe = keys => {
+    const itens = [];
+    const texto = keys.map(k => { const i = ING[k]; if (!i) throw new Error('ingrediente desconhecido: ' + k); i[1].forEach(it => { const ja = itens.find(x => x.id === it.id); if (ja) ja.q += it.q; else itens.push({ id: it.id, q: it.q }); }); return i[0]; });
+    const m = macrosItens(itens);
+    return Object.assign(m, { texto, itens });
+  };
 
   // ---------- catálogo: opções do plano da nutricionista ----------
   function montarPlano() {
     const lista = { cafe: [], lancheM: [], almoco: [], lancheT: [], pre: [], jantar: [] };
-    const add = (slot, id, fonte, keys) => { const m = macrosDe(keys); lista[slot].push({ ck: 'p:' + id, slot, origem: 'plano', fonte, alimentos: m.texto.join(' + '), kcal: Math.round(m.kcal), prot: Math.round(m.prot), carb: Math.round(m.carb), gord: Math.round(m.gord), vermelha: m.vermelha, freq: 0 }); };
+    const add = (slot, id, fonte, keys) => { const m = macrosDe(keys); lista[slot].push({ ck: 'p:' + id, slot, origem: 'plano', fonte, alimentos: m.texto.join(' + '), itens: m.itens, kcal: Math.round(m.kcal), prot: Math.round(m.prot), carb: Math.round(m.carb), gord: Math.round(m.gord), vermelha: m.vermelha, freq: 0 }); };
     // Café: opção 1 (pão/tapioca/peta + ovos ou frango + queijo + fruta com farelo + café/chá), opção 2 (coalhada/iogurte) e opção 3 (omelete)
     const paes = ['paoFrances', 'paoForma', 'tapioca', 'peta'], prots = ['ovos2', 'frango2'], queijos = ['queijoFresco', 'mucarela', 'requeijao'];
     paes.forEach(p => prots.forEach(r => queijos.forEach(q => add('cafe', `cafe1-${p}-${r}-${q}`, 'Plano: café, opção 1', [p, r, q, 'fruta', 'farelo1', 'cafe']))));
@@ -172,19 +215,20 @@
   function gerarSemana(e) {
     const rnd = mulberry32(e.seed || 1), metas = e.metas || {}, objetivo = e.objetivo || 'manutencao';
     const pools = e.pools || montarPools(e.registros, e.hoje), dias = e.dias || 7;
-    const slotsOn = Object.assign({ cafe: true, lancheM: false, almoco: true, lancheT: true, jantar: true }, e.slotsOn || {});
+    const slotsOn = Object.assign({ cafe: true, lancheM: false, almoco: true, lancheT: true, jantar: true, pre: true }, e.slotsOn || {});
     const treino = new Set(e.treinoDow || []), horarios = Object.assign({}, ...SLOTS.map(s => ({ [s.id]: s.hora })), e.horarios || {});
     const mantidas = new Map(); // refeições travadas/editadas do plano anterior
     if (e.existente && e.existente.inicio === e.inicio) (e.existente.dias || []).forEach(d => (d.refeicoes || []).forEach(m => { if (m.travada || m.origem === 'manual') mantidas.set(d.data + '|' + m.slot, m); }));
+    const removidas = new Set(e.existente && e.existente.inicio === e.inicio ? (e.existente.removidas || []) : []); // refeições que você removeu de um dia
     const uso = new Map(); let vermelhas = 0; const anterior = {};
     const marcarUso = c => { uso.set(c.ck, (uso.get(c.ck) || 0) + 1); if (c.vermelha) vermelhas++; };
     let escolhidas = {};
     const vDia = exceto => Object.keys(escolhidas).reduce((n, s2) => { if (s2 === exceto) return n; const x = escolhidas[s2], r = x && (x.fixa || x.c); return n + (r && r.vermelha ? 1 : 0); }, 0);
     const temFrito = c => c._an.flags.some(f => f.cod === 'frito'); // o plano pede evitar frituras: só entram se não houver alternativa
     const permitido = (c, slot, usadosNoDia, folga) => !(uso.get(c.ck) >= MAX_USO + folga) && !(c.vermelha && vermelhas + vDia(slot) >= 2) && !usadosNoDia.has(c.ck) && !(anterior[slot] === c.ck && folga < 1) && !(temFrito(c) && folga < 3);
-    const out = { inicio: e.inicio, geradoEm: e.agora || new Date().toISOString(), objetivo, dias: [] };
+    const out = { inicio: e.inicio, geradoEm: e.agora || new Date().toISOString(), objetivo, dias: [], removidas: [...removidas] };
     for (let i = 0; i < dias; i++) {
-      const data = somaDias(e.inicio, i), ativos = SLOTS.filter(s => slotsOn[s.id] || (s.id === 'pre' && treino.has(dow(data)))).map(s => s.id);
+      const data = somaDias(e.inicio, i), ativos = SLOTS.filter(s => (mantidas.has(data + '|' + s.id)) || (!removidas.has(data + '|' + s.id) && (s.id === 'pre' ? (slotsOn.pre !== false && treino.has(dow(data))) : !!slotsOn[s.id]))).map(s => s.id);
       const alvos = alvosDoDia(metas, ativos), ctx = { objetivo, alvos }, dia = { data, refeicoes: [] }, usadosNoDia = new Set();
       escolhidas = {};
       const pontuarC = (c, slot) => pontuar({ slot, alimentos: c.alimentos, kcal: c.kcal, prot: c.prot, carb: c.carb, gord: c.gord, origem: c.origem, _an: c._an }, ctx);
@@ -219,7 +263,7 @@
         const x = escolhidas[slot]; if (!x) return;
         if (x.fixa) { dia.refeicoes.push(Object.assign({}, x.fixa, { score: undefined })); anterior[slot] = x.fixa.ck; if (x.fixa.vermelha) vermelhas++; return; }
         marcarUso(x.c); anterior[slot] = x.c.ck;
-        dia.refeicoes.push({ id: `${data}-${slot}`, slot, hora: horarios[slot], alimentos: x.c.alimentos, kcal: Math.round(x.c.kcal), prot: Math.round(x.c.prot), carb: Math.round(x.c.carb), gord: Math.round(x.c.gord), origem: x.c.origem, fonte: x.c.fonte, ck: x.c.ck, vermelha: !!x.c.vermelha, travada: false });
+        dia.refeicoes.push({ id: `${data}-${slot}`, slot, hora: horarios[slot], alimentos: x.c.alimentos, itens: x.c.itens ? x.c.itens.map(it => ({ id: it.id, q: it.q })) : undefined, kcal: Math.round(x.c.kcal), prot: Math.round(x.c.prot), carb: Math.round(x.c.carb), gord: Math.round(x.c.gord), origem: x.c.origem, fonte: x.c.fonte, ck: x.c.ck, vermelha: !!x.c.vermelha, travada: false });
       });
       // pontuação final de cada refeição (inclusive as mantidas)
       dia.refeicoes.forEach(m => { const p = pontuar(m, ctx); m.score = p.score; m.partes = p.partes; m.motivos = p.motivos; m.vermelha = p.vermelha || !!m.vermelha; });
@@ -251,5 +295,5 @@
   const montarPoolsCache = { pools: null };
   function prepararPools(registros, hoje) { montarPoolsCache.pools = montarPools(registros, hoje); return montarPoolsCache.pools; }
 
-  root.CardapioMotor = { SLOTS, SLOT_POR_ID, SLOT_POR_REFEICAO, TOL, norm, dataStr, parseData, somaDias, dow, mulberry32, analisarTexto, alvosDoDia, pontuar, faixa, candidatosHistorico, montarPools, prepararPools, gerarSemana, resumoDia, resumoSemana, alternativas, plano: PLANO };
+  root.CardapioMotor = { CAT, GRUPOS, catInfo, macrosItens, textoItens, SLOTS, SLOT_POR_ID, SLOT_POR_REFEICAO, TOL, norm, dataStr, parseData, somaDias, dow, mulberry32, analisarTexto, alvosDoDia, pontuar, faixa, candidatosHistorico, montarPools, prepararPools, gerarSemana, resumoDia, resumoSemana, alternativas, plano: PLANO };
 })(typeof window !== 'undefined' ? window : globalThis);

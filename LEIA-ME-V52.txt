@@ -1,0 +1,43 @@
+DIÁRIO NUTRICIONAL — V52 (sobre a V51; este pacote inclui também tudo da V46 a V51, então serve a partir da V45)
+
+AJUSTES NO CARDÁPIO DA SEMANA
+
+1. PRÉ-TREINO PODE SER DESMARCADO
+- Em Ajustes, a linha "Pré-Treino" agora tem caixa de marcar. Desmarcada, o cardápio não inclui pré-treino em nenhum dia.
+- Os botões de dias da semana continuam marcando/desmarcando os dias de treino (inclusive todos); o pré-treino de 18h só entra nos dias marcados.
+- Em qualquer refeição do cardápio há o botão "Remover refeição" (vem com "Desfazer"). A remoção vale só para aquele dia e continua valendo se você gerar de novo a mesma semana.
+- No fim de cada dia, "+ Adicionar refeição neste dia" põe de volta (ou acrescenta) uma refeição que não está no dia; a adicionada fica travada.
+- Ao remover ou adicionar, os alvos de calorias e proteína de cada refeição do dia são redistribuídos e os scores recalculados.
+
+2. EDITAR: ITENS E QUANTIDADES PADRONIZADOS (calcula sozinho)
+Resposta à dúvida: ao editar, o SCORE já era recalculado na hora, mas as CALORIAS E MACROS não, porque eram digitados à mão (o texto dos alimentos não gera números).
+Agora a edição tem dois modos:
+- Itens e quantidades (padrão para as refeições do plano): cada refeição vira uma lista de alimentos com quantidade (g, mL, unidade, colher, fatia...).
+  Mude a quantidade, adicione ou remova itens e o total de kcal, proteína, carboidrato e gordura e o score são recalculados a cada toque.
+  O texto da refeição é gerado a partir dos itens (ex.: "Ovo (2 un) + Arroz cozido (100 g)").
+- Manual: como antes, você digita o texto e os valores. Há um aviso na tela de que os números NÃO mudam sozinhos neste modo.
+  Ao alternar de Itens para Manual, os valores atuais são copiados para você ajustar.
+- O catálogo tem 60 alimentos padronizados, em grupos: carnes, peixes e ovos; laticínios e whey; carboidratos; leguminosas; frutas e vegetais; gorduras, sementes e extras;
+  e "Outros (vida real)" (coxinha, pastel, pão de queijo, brigadeiro, bolo, refrigerante) para registrar o que fugiu do plano.
+  Valores aproximados por porção (estilo tabela TACO). Todas as opções do plano da nutricionista agora são montadas com esse mesmo catálogo, então o que aparece na lista é exatamente o que é somado.
+- Refeições que vieram do seu histórico (texto livre) não têm itens: abrem no modo Manual. Quem quiser pode trocar para "Itens e quantidades" e montar do zero.
+- Salvar uma edição trava a refeição (para não mudar ao gerar de novo), como antes.
+
+ARQUIVOS (V46 a V52)
+index.html, service-worker.js, css/app.css, js/00-config.js, js/01-utils.js, js/02a-merge.js, js/03-nuvem.js, js/04-diario.js, js/05-ia-refeicao.js, js/06-medidas.js, js/07-bio.js,
+js/13-sync-supabase.js, js/14-treinos.js, js/15-navegacao.js, js/17-tema.js, js/18-usuarios.js, js/19a-cardapio-motor.js, js/19b-cardapio-ui.js, js/99-main.js, icons/*,
+SQL_USUARIOS_IA_V49.sql, SQL_ACESSO_IA_V50.sql, superbase-functions/dynamic-service/index.ts, ARQUITETURA.md, LEIA-ME-V46..V52.txt.
+Banco e Edge Function: nenhuma mudança.
+
+COMO TESTAR
+1. Cardápio > Ajustes: desmarque "Pré-Treino" e gere: nenhum dia tem pré-treino. Marque de novo e gere: volta nos dias de treino.
+2. Em um dia com pré-treino: "Remover refeição" > Desfazer. Remova de novo e gere outra vez: continua sem ele naquele dia.
+3. "+ Adicionar refeição neste dia" > escolha "Pré-Treino" > toque em uma opção.
+4. Editar uma refeição do plano: dobre a quantidade de um item, adicione "Ovo", remova outro e veja o total e o score mudarem. Troque para Manual e confira que os números ficam como estavam.
+5. Salve, registre no Diário e confira os valores lançados.
+
+COMO FOI TESTADO
+- Motor: 50 verificações (inclui: todo candidato do plano tem itens que somam exatamente os macros; nenhum alimento do catálogo quebrado; pré-treino desligado; remoção mantida ao gerar de novo; refeição adicionada mantida).
+- Tela (navegador simulado, 320 e 390 px, com CSS de aproximação porque o Tailwind não estava disponível no ambiente): chips ligando/desligando, caixa do pré-treino, remover com desfazer,
+  remoção persistente, adicionar refeição, edição por itens (dobrar, adicionar, remover, somar), modo manual sem recálculo automático, salvar com soma igual aos itens, sem erros de script e sem rolagem lateral.
+- NÃO testado: celular real (aparência final e teclado numérico) nem sincronização desse bloco com a nuvem.

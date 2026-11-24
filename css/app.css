@@ -198,3 +198,10 @@
   .cd-btn-ok { background: #ecfdf5; border-color: #6ee7b7; color: #065f46; }
   html.dark .cd-btn { background: #1e293b; border-color: #475569; color: #e2e8f0; }
   html.dark .cd-btn-ok { background: #064e3b; border-color: #047857; color: #d1fae5; }
+
+  /* V52: editor de itens do cardápio */
+  .cd-item { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: .5rem; align-items: center; border: 1px solid #e2e8f0; border-radius: .75rem; padding: .5rem .6rem; }
+  .cd-modo { flex: 1; min-height: 44px; border: 1px solid #cbd5e1; border-radius: .6rem; font-size: 13px; font-weight: 700; background: #fff; color: #334155; }
+  .cd-modo[aria-pressed="true"] { background: #003a70; border-color: #003a70; color: #fff; }
+  html.dark .cd-item { border-color: #475569; } html.dark .cd-modo { background: #1e293b; border-color: #475569; color: #e2e8f0; }
+  html.dark .cd-modo[aria-pressed="true"] { background: #0a5cad; color: #fff; }
