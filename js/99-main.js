@@ -47,3 +47,21 @@ try { document.title = 'Diário Nutricional ' + APP_VERSION; const v = document.
     rotular(tb);
   });
 })();
+
+// V53: se a página (index.html) e o código (js) forem de versões diferentes — arquivos antigos em cache — limpa o cache do app e recarrega uma vez.
+(function () {
+  try {
+    const m = document.querySelector('meta[name="app-version"]');
+    if (m && m.content === APP_VERSION) return;
+    const chave = 'nutri_recarga_' + APP_VERSION;
+    if (sessionStorage.getItem(chave)) { showToast('O app está com arquivos de versões diferentes (página ' + (m ? m.content : 'antiga') + ', código ' + APP_VERSION + '). Feche e abra o app de novo ou limpe os dados do site.'); return; }
+    sessionStorage.setItem(chave, '1');
+    (async () => {
+      try {
+        if (navigator.serviceWorker) { const regs = await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(r => r.unregister())); }
+        if (window.caches) { const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k))); }
+      } catch (_) { /* segue para recarregar mesmo assim */ }
+      location.reload();
+    })();
+  } catch (_) { /* nunca impede o app de abrir */ }
+})();

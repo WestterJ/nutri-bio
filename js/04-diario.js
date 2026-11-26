@@ -85,6 +85,12 @@
     const totalAgua = filtered.reduce((acc, r) => acc + (Number(r.agua) || 0), 0);
     const mediaAgua = Math.round(totalAgua / totalDays);
     const mediaPro = Math.round(filtered.reduce((acc, r) => acc + (Number(r.proteinas) || 0), 0) / totalDays);
+    // V53: score médio das refeições do filtro atual (só as com calorias estimadas e tipo de refeição pontuável)
+    const scores = window.scoreRegistro ? filtered.map(r => window.scoreRegistro(r)).filter(Boolean).map(x => x.score) : [];
+    const mediaScore = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+    const semScore = filtered.length - scores.length;
+    const faixaScore = mediaScore === null ? '' : window.scoreFaixa(mediaScore);
+    const corScore = { 'Ótima': 'text-emerald-700', 'Boa': 'text-sky-700', 'Regular': 'text-amber-700', 'Fraca': 'text-red-700' }[faixaScore] || 'text-slate-500';
 
     $('#kpi-cards').innerHTML = `
       <div class="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm border-l-4 border-l-[#003a70]">
@@ -106,6 +112,11 @@
         <span class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Média Água / Dia</span>
         <div class="text-2xl font-bold text-slate-800 mt-1">${mediaAgua} <span class="text-sm font-normal text-slate-500">ml</span></div>
         <span class="text-xs text-blue-600 font-medium">Meta: ${state.metas.agua} ml/dia</span>
+      </div>
+      <div class="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm border-l-4 border-l-emerald-600" title="Média do score (0 a 100) das refeições do período filtrado: calorias, proteína, qualidade e semelhança com o plano">
+        <span class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Score Médio</span>
+        <div class="text-2xl font-bold text-slate-800 mt-1">${mediaScore === null ? '—' : mediaScore} <span class="text-sm font-semibold ${corScore}">${faixaScore}</span></div>
+        <span class="text-xs text-slate-600 font-medium">${scores.length} refeição(ões) pontuada(s)${semScore ? ' · ' + semScore + ' sem score' : ''}</span>
       </div>
     `;
     $('#contador-registros').textContent = `${totalReg} registros exibidos`;
@@ -135,7 +146,7 @@
       $('#contador-poucas-refeicoes').textContent = new Set(doPeriodo.map(r => r.data).filter(d => diaIncompleto(c, d))).size; }
 
     if (filtered.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="10" class="text-center py-12 text-slate-600">${$('#filtro-poucas-refeicoes').checked ? 'Nenhum dia com menos de 4 refeições neste período. 🎉' : $('#filtro-sem-estimativa').checked ? 'Nenhuma refeição sem estimativa neste período. 🎉' : 'Nenhum registro encontrado no período.'}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="11" class="text-center py-12 text-slate-600">${$('#filtro-poucas-refeicoes').checked ? 'Nenhum dia com menos de 4 refeições neste período. 🎉' : $('#filtro-sem-estimativa').checked ? 'Nenhuma refeição sem estimativa neste período. 🎉' : 'Nenhum registro encontrado no período.'}</td></tr>`;
       return;
     }
 
@@ -153,6 +164,7 @@
         <td class="p-3 text-center text-amber-700 font-medium editable-cell" contenteditable="true" onblur="window.salvarCelulaDiario('${r.id}', 'carboidratos', this.textContent)">${fmtNum(r.carboidratos)}</td>
         <td class="p-3 text-center text-rose-700 font-medium editable-cell" contenteditable="true" onblur="window.salvarCelulaDiario('${r.id}', 'gorduras', this.textContent)">${fmtNum(r.gorduras)}</td>
         <td class="p-3 text-center text-blue-600 editable-cell" contenteditable="true" onblur="window.salvarCelulaDiario('${r.id}', 'agua', this.textContent)">${fmtNum(r.agua)}</td>
+        <td class="p-3 text-center">${window.scoreBadge ? window.scoreBadge(window.scoreRegistro(r)) : ''}</td>
         <td class="p-3 text-slate-500 text-xs italic editable-cell" contenteditable="true" onblur="window.salvarCelulaDiario('${r.id}', 'obs', this.textContent)">${esc(r.obs || '-')}</td>
         <td class="p-3 text-center whitespace-nowrap">
           <button class="text-xs bg-sky-50 hover:bg-sky-100 text-sky-700 px-2 py-1 rounded-md font-medium transition mr-1" onclick="window.copiarRegistro('${r.id}')" title="Copiar p/ Hoje">Copiar</button>
@@ -266,6 +278,7 @@
     $('#reg-calorias').value = m.calorias || ''; $('#reg-proteinas').value = m.proteinas || '';
     $('#reg-carboidratos').value = m.carboidratos || ''; $('#reg-gorduras').value = m.gorduras || '';
     $('#reg-agua').value = m.agua || ''; $('#reg-obs').value = m.obs || '';
+    if (window.atualizarScoreRegistro) window.atualizarScoreRegistro();
     showToast(aviso);
   }
   $('#btn-repetir-refeicao').onclick = () => { if (refeicaoRepetirAtual) aplicarModeloRefeicao(refeicaoRepetirAtual.r, 'Refeição repetida. Confira e salve.'); };

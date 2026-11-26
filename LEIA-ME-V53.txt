@@ -1,0 +1,42 @@
+DIÁRIO NUTRICIONAL — V53 (sobre a V52; este pacote inclui também tudo da V46 a V52, então serve a partir da V45)
+
+1. SCORE NO DIÁRIO (mesma conta do Cardápio, 0 a 100)
+- Tabela do Diário: nova coluna "Score" (entre Água e Observação). O ponteiro/toque no score mostra os motivos. Sem calorias estimadas ou na "Ceia", aparece "—".
+- Formulário da refeição: o "Score da refeição" aparece e se atualiza ao digitar, ao trocar o tipo de refeição e logo depois que o Texto IA ou a Foto IA preenchem as calorias e os macros (inclui o "Por quê?").
+- Cartões do topo: novo cartão "Score Médio", calculado sobre as refeições do filtro de período escolhido (só as com calorias estimadas e fora a Ceia). Mostra quantas refeições entraram e quantas ficaram sem score.
+- O score não é gravado no registro: é calculado na hora com as suas Metas e o objetivo, então acompanha qualquer mudança nelas.
+- Como o score é calculado: calorias (35) + proteína (30) + qualidade (20) + semelhança com o plano da nutricionista (15), comparando a refeição com a parcela da meta diária daquele tipo de refeição (café, almoço, lanche da tarde, jantar; segue as refeições ligadas no Cardápio).
+
+2. TEXTO IA / FOTO IA: ERRO (diagnóstico pelos logs de ia_logs e da Edge Function)
+- Causa: alta demanda no Google. A mensagem real é "This model is currently experiencing high demand" (HTTP 503 do Gemini, que a função devolve como 502). Desde 21/11 o modelo principal falha e a função cai no modelo reserva; desde 23/11 o reserva também respondeu "alta demanda" em quase todas as tentativas. Não é erro do app nem da sua conta.
+- Correção no app (V53): em Texto IA e Foto IA, se o Gemini devolver 500/502/503/504 o app tenta sozinho de novo (até 3 tentativas, com pausa de 2 e 4 s) e avisa "Tentando de novo (2/3)…". Erros de permissão (403), limite diário (429) e cancelamento não são repetidos. Quando todas falham, o log registra "(após 3 tentativas)".
+- Se continuar falhando por muito tempo, vale ver se o modelo configurado ainda está disponível (secrets GEMINI_MODEL e GEMINI_MODEL_FALLBACK) ou configurar um terceiro modelo reserva. Não alterei a Edge Function nesta versão.
+
+3. CARDÁPIO: EDITAR E TROCAR "NÃO FUNCIONAM"
+- Não consegui reproduzir: varri 56 aberturas de Editar e Trocar em um navegador simulado (inclusive com histórico com dados estranhos) e nenhuma falhou. Os seus dados salvos no Supabase estão íntegros, e o "Travar" funcionou no seu plano.
+- Hipótese mais provável: arquivos de versões diferentes no celular (página antiga com código novo, por cache do navegador/PWA). Nesse caso os botões que abrem janelas falham em silêncio e os outros continuam funcionando.
+- Proteções novas: (a) o app compara a versão da página com a do código; se forem diferentes, limpa o cache do app e recarrega uma vez, e se persistir mostra um aviso explicando; (b) o service worker passou a ignorar o cache HTTP do navegador ao instalar e ao buscar arquivos; (c) qualquer erro nos botões do Cardápio agora aparece em um aviso na tela (antes ficava invisível).
+- Se depois de atualizar o Editar/Trocar ainda não abrirem, me mande o texto do aviso que aparecer.
+
+4. ESTIMATIVAS FALTANTES (feito direto no Supabase, fora do app)
+- Havia 5 refeições sem calorias (23 e 24/11, lançadas quando o Texto IA estava falhando). Calculei cada uma pelos alimentos descritos e gravei calorias, proteínas, carboidratos e gorduras só nesses 5 registros; acrescentei na Observação "Calorias e macros estimados por Claude direto na base (24/11)". Os demais registros não foram alterados e hoje não resta nenhuma refeição com descrição e sem estimativa.
+- Valores gravados (kcal / P / C / G): 23/11 almoço 345/35/26/10; 23/11 jantar 305/30/27/8; 24/11 almoço 520/38/35/25; 24/11 café 424/31/42/17; 24/11 lanche da tarde 497/26/70/14.
+- São estimativas por porções caseiras (como o Texto IA faz); confira e ajuste se pesou os alimentos. Duas observações antigas (cópias de refeições anteriores) continuam com o texto da IA da refeição original.
+
+ARQUIVOS (V46 a V53)
+index.html, service-worker.js, css/app.css, js/00-config.js, js/01-utils.js, js/02a-merge.js, js/03-nuvem.js, js/04-diario.js, js/05-ia-refeicao.js, js/06-medidas.js, js/07-bio.js,
+js/13-sync-supabase.js, js/14-treinos.js, js/15-navegacao.js, js/17-tema.js, js/18-usuarios.js, js/19a-cardapio-motor.js, js/19b-cardapio-ui.js, js/19c-score-diario.js (novo), js/99-main.js, icons/*,
+SQL_USUARIOS_IA_V49.sql, SQL_ACESSO_IA_V50.sql, superbase-functions/dynamic-service/index.ts, ARQUITETURA.md, LEIA-ME-V46..V53.txt.
+
+COMO PUBLICAR: suba TODOS os arquivos do zip (principalmente index.html e js/). Abra o app duas vezes. Se aparecer o aviso de versões diferentes, limpe os dados do site e entre de novo.
+
+COMO TESTAR
+1. Diário: veja a coluna Score e o cartão "Score Médio"; troque o filtro de período e a média muda.
+2. Nova refeição: digite os macros e veja o score mudar; use o Texto IA e veja o score aparecer logo após a estimativa.
+3. Texto IA com o Gemini instável: deve aparecer "Tentando de novo (2/3)…" antes de desistir.
+4. Cardápio: Trocar e Editar abrem as janelas.
+
+COMO FOI TESTADO
+- Motor: 56 verificações (inclui o score de registro: sem calorias e Ceia => sem score; refeição boa x ruim; mesmo resultado do Cardápio).
+- Tela (navegador simulado, 320 e 390 px, CSS de aproximação por falta do Tailwind no ambiente): coluna e cartão de score, filtros, formulário ao vivo, nova tentativa da IA (502,502,200 ok após 3; 503,200 ok após 2; 502x3 falha após 3; 403 sem repetir), versão misturada (recarrega uma vez e depois avisa), regressão do Cardápio e varredura de 56 aberturas.
+- NÃO testado: celular real, nem o Texto IA real com o Gemini em alta demanda.

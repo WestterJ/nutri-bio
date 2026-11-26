@@ -204,9 +204,21 @@
     const inicio = Date.now();
     let tamanhoKb = null;
     try { tamanhoKb = Math.round(JSON.stringify(payload).length / 1024); } catch (_) {}
+    // V53: o Gemini às vezes responde "alta demanda" (502/503) por alguns segundos. Em Texto IA e Foto IA, tenta de novo sozinho (até 3 vezes no total).
+    const rapido = tipo === 'refeicao_texto' || tipo === 'refeicao_foto', maxTent = rapido ? 3 : 1;
+    const esperar = (ms) => new Promise((ok, falha) => { const t = setTimeout(ok, ms); if (sinal) sinal.addEventListener('abort', () => { clearTimeout(t); falha(Object.assign(new Error('Cancelado.'), { cancelado: true })); }, { once: true }); });
     try {
       if (sinal && sinal.aborted) throw Object.assign(new Error('Cancelado.'), { cancelado: true });
-      const resp = await chamarNutriGeminiUmaVez(payload, timeoutMs, sinal);
+      let resp = null;
+      for (let tent = 1; !resp; tent++) {
+        try { resp = await chamarNutriGeminiUmaVez(payload, timeoutMs, sinal); }
+        catch (err) {
+          const temporario = err && [500, 502, 503, 504].includes(Number(err.status)) && !err.cancelado && !err.tempoEsgotado;
+          if (!temporario || tent >= maxTent) { if (tent > 1 && err) err.tentativas = tent; throw err; }
+          showToast(`O Gemini está com alta demanda. Tentando de novo (${tent + 1}/${maxTent})…`);
+          await esperar(tent * 2000);
+        }
+      }
       const uso = await lerUsoTokens(resp);
       registrarLogIA({ tipo, status: 'ok', http_status: resp.status, duracao_ms: Date.now() - inicio, tamanho_kb: tamanhoKb, ...(resp.iaTiming || {}), ...uso });
       return resp;
@@ -214,7 +226,7 @@
       registrarLogIA({
         tipo, status: e && e.cancelado ? 'cancelado' : (e && e.tempoEsgotado ? 'timeout' : 'erro'),
         http_status: Number(e && e.status) || null, duracao_ms: Date.now() - inicio, tamanho_kb: tamanhoKb,
-        erro: String((e && (e.detail || e.message)) || '').slice(0, 300),
+        erro: String(((e && (e.detail || e.message)) || '') + (e && e.tentativas ? ` (após ${e.tentativas} tentativas)` : '')).slice(0, 300),
         ...((e && e.iaTiming) || {})
       });
       throw e;
@@ -260,6 +272,7 @@
         $('#reg-proteinas').value = Number(igual.proteinas) || 0;
         $('#reg-carboidratos').value = Number(igual.carboidratos) || 0;
         $('#reg-gorduras').value = Number(igual.gorduras) || 0;
+        if (window.atualizarScoreRegistro) window.atualizarScoreRegistro();
         iaForcarTexto = normalizarRefeicao(texto);
         showToast(`Mesma refeição de ${fmtDataBr(igual.data)}: valores reaproveitados na hora, sem usar a IA. Clique em Texto IA de novo se quiser recalcular pela IA.`);
         return;
@@ -376,6 +389,7 @@
       $('#reg-proteinas').value = Math.round(totalProteinas * 10) / 10;
       $('#reg-carboidratos').value = Math.round(totalCarboidratos * 10) / 10;
       $('#reg-gorduras').value = Math.round(totalGorduras * 10) / 10;
+      if (window.atualizarScoreRegistro) window.atualizarScoreRegistro(); // V53: já mostra o score da refeição estimada
 
       const notaExistente = $('#reg-obs').value.trim()
         .replace(/(?:^|\n)Estimativa da IA:[^\n]*/g, '')

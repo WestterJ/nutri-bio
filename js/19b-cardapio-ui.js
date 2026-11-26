@@ -239,29 +239,31 @@ window.CardapioUI = (function () {
   }
 
   // ---------- eventos ----------
+  // V53: elemento ausente (página antiga em cache) não derruba os demais botões; erros viram aviso visível.
+  const on = (sel, ev, fn) => { const e = document.querySelector(sel); if (!e) { console.warn('Cardápio: elemento ausente', sel); return; } e.addEventListener(ev, function (x) { try { return fn.call(this, x); } catch (err) { console.error('Cardápio:', err); showToast('Não foi possível concluir: ' + (err && err.message ? err.message : err) + '. Feche e abra o app de novo; se persistir, limpe os dados do site.'); } }); };
   function ligar() {
-    $('#cd-gerar').addEventListener('click', () => gerar(false));
-    $('#cd-objetivo').addEventListener('change', e => { cfg().objetivo = e.target.value; saveCloud(); renderAjustes(); });
-    $('#cd-periodo').addEventListener('change', e => { cfg().periodo = e.target.value; saveCloud(); });
-    $('#cd-treino').addEventListener('click', e => { const b = e.target.closest('[data-dow]'); if (!b) return; const c = cfg(), d = Number(b.dataset.dow); c.treinoDow = c.treinoDow.includes(d) ? c.treinoDow.filter(x => x !== d) : [...c.treinoDow, d].sort((x, y) => x - y); saveCloud(); renderAjustes(); });
-    $('#cd-slots').addEventListener('change', e => { const c = cfg(); if (e.target.dataset.slot) c.slotsOn[e.target.dataset.slot] = e.target.checked; if (e.target.dataset.hora) c.horarios[e.target.dataset.hora] = e.target.value || c.horarios[e.target.dataset.hora]; saveCloud(); });
-    $('#cd-dias').addEventListener('click', e => { const b = e.target.closest('[data-dia]'); if (!b) return; diaSel = Number(b.dataset.dia); render(); });
-    $('#cd-dia').addEventListener('click', e => {
+    on('#cd-gerar', 'click', () => gerar(false));
+    on('#cd-objetivo', 'change', e => { cfg().objetivo = e.target.value; saveCloud(); renderAjustes(); });
+    on('#cd-periodo', 'change', e => { cfg().periodo = e.target.value; saveCloud(); });
+    on('#cd-treino', 'click', e => { const b = e.target.closest('[data-dow]'); if (!b) return; const c = cfg(), d = Number(b.dataset.dow); c.treinoDow = c.treinoDow.includes(d) ? c.treinoDow.filter(x => x !== d) : [...c.treinoDow, d].sort((x, y) => x - y); saveCloud(); renderAjustes(); });
+    on('#cd-slots', 'change', e => { const c = cfg(); if (e.target.dataset.slot) c.slotsOn[e.target.dataset.slot] = e.target.checked; if (e.target.dataset.hora) c.horarios[e.target.dataset.hora] = e.target.value || c.horarios[e.target.dataset.hora]; saveCloud(); });
+    on('#cd-dias', 'click', e => { const b = e.target.closest('[data-dia]'); if (!b) return; diaSel = Number(b.dataset.dia); render(); });
+    on('#cd-dia', 'click', e => {
       const add = e.target.closest('[data-add-dia]'); if (add) { abrirAdicionar(Number(add.dataset.addDia)); return; }
       const b = e.target.closest('[data-act]'); if (!b) return; const id = b.dataset.id;
       ({ trocar: () => abrirTrocar(id), editar: () => abrirEditar(id), travar: () => travar(id), registrar: () => registrar(id), remover: () => remover(id) })[b.dataset.act]();
     });
-    $('#cd-trocar-lista').addEventListener('click', e => { const b = e.target.closest('[data-alt]'); if (b) aplicarEscolha(Number(b.dataset.alt)); });
-    $('#cd-trocar-slot').addEventListener('change', () => listarAlternativas(false));
-    $('#cd-trocar-embaralhar').addEventListener('click', () => listarAlternativas(true));
-    $('#cd-trocar-fechar').addEventListener('click', () => $('#modal-cd-trocar').close());
-    ['#cd-ed-hora', '#cd-ed-alimentos', '#cd-ed-kcal', '#cd-ed-prot', '#cd-ed-carb', '#cd-ed-gord'].forEach(s => $(s).addEventListener('input', atualizarTotais));
-    $('#cd-ed-modo-itens').addEventListener('click', () => trocarModo('itens')); $('#cd-ed-modo-manual').addEventListener('click', () => trocarModo('manual'));
-    $('#cd-ed-add-btn').addEventListener('click', () => { const id = $('#cd-ed-add').value; if (!M.CAT[id]) return; const ja = ed.itens.find(it => it.id === id); if (ja) ja.q = Math.round((Number(ja.q) + M.catInfo(id).padrao) * 100) / 100; else ed.itens.push({ id, q: M.catInfo(id).padrao }); renderEditor(); });
-    $('#cd-ed-itens').addEventListener('input', e => { const i = e.target.dataset.q; if (i === undefined) return; ed.itens[Number(i)].q = Number(e.target.value) || 0; const k = e.target.closest('.cd-item').querySelector('.cd-k'); if (k) k.textContent = fmt(M.macrosItens([ed.itens[Number(i)]]).kcal); atualizarTotais(); });
-    $('#cd-ed-itens').addEventListener('click', e => { const b = e.target.closest('[data-rm]'); if (!b) return; ed.itens.splice(Number(b.dataset.rm), 1); renderEditor(); });
-    $('#cd-ed-salvar').addEventListener('click', salvarEdicao);
-    $('#cd-ed-cancelar').addEventListener('click', () => $('#modal-cd-editar').close());
+    on('#cd-trocar-lista', 'click', e => { const b = e.target.closest('[data-alt]'); if (b) aplicarEscolha(Number(b.dataset.alt)); });
+    on('#cd-trocar-slot', 'change', () => listarAlternativas(false));
+    on('#cd-trocar-embaralhar', 'click', () => listarAlternativas(true));
+    on('#cd-trocar-fechar', 'click', () => $('#modal-cd-trocar').close());
+    ['#cd-ed-hora', '#cd-ed-alimentos', '#cd-ed-kcal', '#cd-ed-prot', '#cd-ed-carb', '#cd-ed-gord'].forEach(s => on(s, 'input', atualizarTotais));
+    on('#cd-ed-modo-itens', 'click', () => trocarModo('itens')); on('#cd-ed-modo-manual', 'click', () => trocarModo('manual'));
+    on('#cd-ed-add-btn', 'click', () => { const id = $('#cd-ed-add').value; if (!M.CAT[id]) return; const ja = ed.itens.find(it => it.id === id); if (ja) ja.q = Math.round((Number(ja.q) + M.catInfo(id).padrao) * 100) / 100; else ed.itens.push({ id, q: M.catInfo(id).padrao }); renderEditor(); });
+    on('#cd-ed-itens', 'input', e => { const i = e.target.dataset.q; if (i === undefined) return; ed.itens[Number(i)].q = Number(e.target.value) || 0; const k = e.target.closest('.cd-item').querySelector('.cd-k'); if (k) k.textContent = fmt(M.macrosItens([ed.itens[Number(i)]]).kcal); atualizarTotais(); });
+    on('#cd-ed-itens', 'click', e => { const b = e.target.closest('[data-rm]'); if (!b) return; ed.itens.splice(Number(b.dataset.rm), 1); renderEditor(); });
+    on('#cd-ed-salvar', 'click', salvarEdicao);
+    on('#cd-ed-cancelar', 'click', () => $('#modal-cd-editar').close());
   }
   ligar();
   function abrir() { M.prepararPools(state.registros || [], hojeLocal()); render(); }

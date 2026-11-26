@@ -181,6 +181,14 @@
     motivos.push(m.origem === 'plano' ? 'Segue as opções do plano da nutricionista.' : (an.grupos >= 3 ? 'Parecida com o que o plano orienta.' : 'Pouco parecida com as opções do plano.'));
     return { score, partes: { calorias: Math.round(ptsK), proteina: Math.round(ptsP), qualidade: Math.round(q), plano: Math.round(ptsA) }, motivos, vermelha: an.vermelha };
   }
+  // V53: score de uma refeição já lançada no Diário (mesma conta do cardápio). Retorna null sem estimativa de calorias ou para "Ceia".
+  function pontuarRegistro(r, metas, objetivo, slotsBase) {
+    const slot = SLOT_POR_REFEICAO[r && r.refeicao]; if (!slot) return null;
+    const kcal = num(r.calorias); if (!(kcal > 0)) return null;
+    const ativos = Array.from(new Set([...(slotsBase && slotsBase.length ? slotsBase : ['cafe', 'almoco', 'lancheT', 'jantar']), slot]));
+    const alvos = alvosDoDia(metas || {}, ativos);
+    return pontuar({ slot, alimentos: r.alimentos, kcal, prot: r.proteinas, carb: r.carboidratos, gord: r.gorduras, origem: 'diario' }, { objetivo: objetivo || 'manutencao', alvos });
+  }
   const faixa = s => s >= 80 ? 'Ótima' : s >= 60 ? 'Boa' : s >= 40 ? 'Regular' : 'Fraca';
 
   // ---------- candidatos ----------
@@ -295,5 +303,5 @@
   const montarPoolsCache = { pools: null };
   function prepararPools(registros, hoje) { montarPoolsCache.pools = montarPools(registros, hoje); return montarPoolsCache.pools; }
 
-  root.CardapioMotor = { CAT, GRUPOS, catInfo, macrosItens, textoItens, SLOTS, SLOT_POR_ID, SLOT_POR_REFEICAO, TOL, norm, dataStr, parseData, somaDias, dow, mulberry32, analisarTexto, alvosDoDia, pontuar, faixa, candidatosHistorico, montarPools, prepararPools, gerarSemana, resumoDia, resumoSemana, alternativas, plano: PLANO };
+  root.CardapioMotor = { pontuarRegistro, CAT, GRUPOS, catInfo, macrosItens, textoItens, SLOTS, SLOT_POR_ID, SLOT_POR_REFEICAO, TOL, norm, dataStr, parseData, somaDias, dow, mulberry32, analisarTexto, alvosDoDia, pontuar, faixa, candidatosHistorico, montarPools, prepararPools, gerarSemana, resumoDia, resumoSemana, alternativas, plano: PLANO };
 })(typeof window !== 'undefined' ? window : globalThis);

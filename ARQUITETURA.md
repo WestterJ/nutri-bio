@@ -107,3 +107,8 @@ Indique o arquivo ou a área: "Em `04-diario.js`, …" ou "Na aba Treinos, …".
 - `19a-cardapio-motor.js`: `CAT` (catálogo de ~60 alimentos: nome, grupo, unidade, passo, quantidade padrão, kcal/prot/carb/gord por referência — 100 g/mL ou 1 unidade — e flag de carne vermelha), `macrosItens(itens)` e `textoItens(itens)`. O plano da nutricionista (`ING`) é definido em itens do catálogo; cada candidato do plano carrega `itens: [{id, q}]`, e seus macros são a soma desses itens.
 - `gerarSemana`: `slotsOn.pre === false` desliga o pré-treino; `existente.removidas` (lista `"data|slot"`) mantém refeições removidas pelo usuário ao gerar de novo a mesma semana; refeições travadas/editadas/adicionadas mantêm-se mesmo em slots desligados na configuração.
 - `19b-cardapio-ui.js`: editor com modos `itens`/`manual`; `remover` (com `showToastDesfazer`), `abrirAdicionar`; `state.cardapio.plano.removidas`.
+
+## V53
+- `19a`: `pontuarRegistro(r, metas, objetivo, slotsBase)` (usa `pontuar` com origem `diario`; devolve `null` sem calorias ou para Ceia). `19c-score-diario.js`: `scoreRegistro`, `scoreBadge`, `scoreFaixa`, `atualizarScoreRegistro` (campo `#reg-score` do formulário; observa `#modal-registro`). `04-diario.js`: coluna Score (9ª) e cartão "Score Médio" (`#kpi-cards`, 5 cartões).
+- `05-ia-refeicao.js`: `chamarNutriGemini` repete até 3 vezes em 500/502/503/504 para `refeicao_texto` e `refeicao_foto`.
+- `99-main.js`: guarda de versão (`<meta name="app-version">` x `APP_VERSION`; limpa caches/service worker e recarrega uma vez). `service-worker.js`: instalação com `cache:'reload'` e busca com `cache:'no-cache'`. `19b`: auxiliar `on()` (elemento ausente não derruba os outros botões; erro vira aviso).
