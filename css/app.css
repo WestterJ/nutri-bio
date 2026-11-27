@@ -205,3 +205,20 @@
   .cd-modo[aria-pressed="true"] { background: #003a70; border-color: #003a70; color: #fff; }
   html.dark .cd-item { border-color: #475569; } html.dark .cd-modo { background: #1e293b; border-color: #475569; color: #e2e8f0; }
   html.dark .cd-modo[aria-pressed="true"] { background: #0a5cad; color: #fff; }
+
+  /* V53.1: tabela do Diário no computador — cabe na tela (11 colunas), Observação limitada e coluna Ações sempre visível */
+  .obs-cel { min-height: 1.25rem; }
+  @media (min-width: 701px) {
+    .tabela-cards--diario th, .tabela-cards--diario td { padding: .5rem .5rem; }
+    .tabela-cards--diario th { font-size: 11px; line-height: 1.2; }
+    .tabela-cards--diario td:nth-child(3) { min-width: 220px; max-width: 360px; }
+    .tabela-cards--diario td:nth-child(10) { width: 220px; max-width: 240px; vertical-align: top; }
+    .tabela-cards--diario .obs-cel { max-height: 4.8rem; overflow-y: auto; }
+    .tabela-cards--diario th:last-child, .tabela-cards--diario td:last-child { position: sticky; right: 0; }
+    .tabela-cards--diario th:last-child { z-index: 12; background-color: #003a70; }
+    .tabela-cards--diario td:last-child { z-index: 5; background-color: #fff; box-shadow: -8px 0 8px -8px rgba(15,23,42,.25); }
+    .tabela-cards--diario tr:hover td:last-child { background-color: #f8fafc; }
+    html.dark .tabela-cards--diario td:last-child { background-color: #1e293b; box-shadow: -8px 0 8px -8px rgba(0,0,0,.6); }
+    html.dark .tabela-cards--diario tr:hover td:last-child { background-color: #263449; }
+  }
+  @media (max-width: 700px) { .obs-cel { max-height: none; overflow: visible; } }

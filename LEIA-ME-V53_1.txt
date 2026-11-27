@@ -1,0 +1,15 @@
+DIÁRIO NUTRICIONAL — V53.1 (correção sobre a V53)
+
+PROBLEMA: no computador a tabela do Diário ficava cortada à direita (Observação e Ações).
+CAUSA: a V53 acrescentou a coluna Score (11 colunas) e a tabela tinha largura mínima de 1300 px, maior que o espaço útil (~1180-1200 px). O excesso virava rolagem horizontal escondida no rodapé da caixa. A coluna Alimentos ficava espremida e a Observação (texto longo da IA) ocupava ~300 px.
+
+CORREÇÕES
+- Largura mínima da tabela: 1300 -> 1080 px; células com menos espaço interno; títulos menores.
+- Alimentos: largura mínima 220 px. Observação: largura 220 px, altura máxima de ~4 linhas com rolagem interna (continua editável).
+- Coluna Ações fixa no lado direito: sempre visível, mesmo com rolagem horizontal (claro e escuro).
+- Telas muito largas (>= 1536 px): área principal até 1600 px.
+- Celular (até 700 px): sem mudança, continua em cartões.
+
+ARQUIVOS: index.html, css/app.css, js/00-config.js (versão V53.1), js/04-diario.js, LEIA-ME-V53_1.txt
+PUBLICAR: suba os 5 arquivos e abra o app duas vezes (o service worker troca o cache sozinho).
+NÃO testado: navegador real (só verificação de sintaxe). Se ainda cortar, mande um print.

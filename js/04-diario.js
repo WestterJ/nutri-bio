@@ -165,7 +165,7 @@
         <td class="p-3 text-center text-rose-700 font-medium editable-cell" contenteditable="true" onblur="window.salvarCelulaDiario('${r.id}', 'gorduras', this.textContent)">${fmtNum(r.gorduras)}</td>
         <td class="p-3 text-center text-blue-600 editable-cell" contenteditable="true" onblur="window.salvarCelulaDiario('${r.id}', 'agua', this.textContent)">${fmtNum(r.agua)}</td>
         <td class="p-3 text-center">${window.scoreBadge ? window.scoreBadge(window.scoreRegistro(r)) : ''}</td>
-        <td class="p-3 text-slate-500 text-xs italic editable-cell" contenteditable="true" onblur="window.salvarCelulaDiario('${r.id}', 'obs', this.textContent)">${esc(r.obs || '-')}</td>
+        <td class="p-3 text-slate-500 text-xs italic"><div class="obs-cel editable-cell" contenteditable="true" onblur="window.salvarCelulaDiario('${r.id}', 'obs', this.textContent)">${esc(r.obs || '-')}</div></td>
         <td class="p-3 text-center whitespace-nowrap">
           <button class="text-xs bg-sky-50 hover:bg-sky-100 text-sky-700 px-2 py-1 rounded-md font-medium transition mr-1" onclick="window.copiarRegistro('${r.id}')" title="Copiar p/ Hoje">Copiar</button>
           <button class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded-md font-medium transition mr-1" onclick="window.editarRegistro('${r.id}')">Editar</button>
